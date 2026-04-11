@@ -1,0 +1,7 @@
+# COPIAR a signing.properties y completar
+# NUNCA subir este archivo al repositorio
+
+STORE_FILE=maikpet-release.jks
+STORE_PASSWORD=MaikPet2024!
+KEY_ALIAS=maikpet
+KEY_PASSWORD=MaikPet2024!

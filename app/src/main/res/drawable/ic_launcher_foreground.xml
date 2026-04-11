@@ -1,0 +1,56 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Background circle -->
+    <path
+        android:fillColor="#FF9800"
+        android:pathData="M54,54m-40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0"/>
+    <!-- Dog face -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,30 C70,30 80,45 80,60 C80,75 70,85 54,85 C38,85 28,75 28,60 C28,45 38,30 54,30 Z"/>
+    <!-- Left ear -->
+    <path
+        android:fillColor="#FFCC80"
+        android:pathData="M32,40 L25,20 L42,35 Z"/>
+    <!-- Right ear -->
+    <path
+        android:fillColor="#FFCC80"
+        android:pathData="M76,40 L83,20 L66,35 Z"/>
+    <!-- Left eye -->
+    <path
+        android:fillColor="#4E342E"
+        android:pathData="M44,52 A5,5 0 1,1 44,52.01"/>
+    <!-- Right eye -->
+    <path
+        android:fillColor="#4E342E"
+        android:pathData="M64,52 A5,5 0 1,1 64,52.01"/>
+    <!-- Eye shine left -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M46,50 A2,2 0 1,1 46,50.01"/>
+    <!-- Eye shine right -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M66,50 A2,2 0 1,1 66,50.01"/>
+    <!-- Nose -->
+    <path
+        android:fillColor="#4E342E"
+        android:pathData="M54,62 A6,5 0 1,1 54,62.01"/>
+    <!-- Nose shine -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M52,60 A2,1.5 0 1,1 52,60.01"/>
+    <!-- Mouth -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#4E342E"
+        android:strokeWidth="2"
+        android:pathData="M54,67 L54,72 M47,75 Q54,80 61,75"/>
+    <!-- Tongue -->
+    <path
+        android:fillColor="#E91E63"
+        android:pathData="M50,75 Q54,82 58,75 Q58,80 54,82 Q50,80 50,75 Z"/>
+</vector>

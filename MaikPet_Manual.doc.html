@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'>
+<head>
+<meta charset="utf-8">
+<title>Manual MaikPet - App de Adopción de Mascotas</title>
+<style>
+body { font-family: Calibri; font-size: 12pt; line-height: 1.5; }
+h1 { font-size: 24pt; color: #00ADB5; border-bottom: 2px solid #00ADB5; page-break-before: always; }
+h2 { font-size: 18pt; color: #16213E; margin-top: 24pt; }
+h3 { font-size: 14pt; color: #0F3460; margin-top: 18pt; }
+code { font-family: Consolas; background: #f5f5f5; padding: 2px 6px; }
+pre { font-family: Consolas; background: #f5f5f5; padding: 12px; border-left: 4px solid #00ADB5; overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; margin: 12pt 0; }
+th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+th { background: #16213E; color: white; }
+tr:nth-child(even) { background: #f9f9f9; }
+.note { background: #e7f3ff; border-left: 4px solid #2196F3; padding: 10px; margin: 12pt 0; }
+.warning { background: #fff3cd; border-left: 4px solid #FFC107; padding: 10px; margin: 12pt 0; }
+</style>
+</head>
+<body>
+
+<h1>MaikPet - Manual de Desarrollo</h1>
+<p><strong>Versión:</strong> 1.0</p>
+<p><strong>Fecha:</strong> Abril 2026</p>
+<p><strong>Descripción:</strong> Aplicación Android para adopción gratuita de mascotas</p>
+
+<h2>Tabla de Contenidos</h2>
+<ol>
+<li><a href="#descripcion">Descripción General</a></li>
+<li><a href="#requisitos">Requisitos Previos</a></li>
+<li><a href="#estructura">Estructura del Proyecto</a></li>
+<li><a href="#backend">Backend PHP</a></li>
+<li><a href="#basedatos">Base de Datos</a></li>
+<li><a href="#android">Android App</a></li>
+<li><a href="#apis">Configuración de APIs</a></li>
+<li><a href="#compilar">Compilar y Ejecutar</a></li>
+<li><a href="#servidor">Subir al Servidor</a></li>
+<li><a href="#problemas">Solución de Problemas</a></li>
+</ol>
+
+<h1 id="descripcion">1. Descripción General</h1>
+
+<h2>¿Qué es MaikPet?</h2>
+<p><strong>MaikPet</strong> es una aplicación Android para adopción gratuita de mascotas que permite:</p>
+<ul>
+<li>Ver mascotas disponibles en un mapa interactivo</li>
+<li>Ver lista de adopciones con fotos</li>
+<li>Publicar mascotas para adopción</li>
+<li>Editar y eliminar publicaciones propias</li>
+<li>Login y registro de usuarios</li>
+<li>Contactar adoptantes por WhatsApp</li>
+<li>Recibir notificaciones push</li>
+<li>Autocompletado de direcciones</li>
+<li>Validación contra ventas y cruzas</li>
+</ul>
+
+<h2>Stack Tecnológico</h2>
+<table>
+<tr><th>Componente</th><th>Tecnología</th></tr>
+<tr><td>Frontend</td><td>Android (Kotlin + Jetpack Compose)</td></tr>
+<tr><td>Backend</td><td>PHP 7+</td></tr>
+<tr><td>Base de datos</td><td>MySQL 5.7+</td></tr>
+<tr><td>Maps</td><td>Google Maps API</td></tr>
+<tr><td>Imágenes</td><td>Base64 en MySQL (MEDIUMTEXT)</td></tr>
+<tr><td>Push</td><td>Firebase Cloud Messaging</td></tr>
+<tr><td>Inyección dependencias</td><td>Hilt</td></tr>
+<tr><td>Networking</td><td>Retrofit + OkHttp</td></tr>
+</table>
+
+<h1 id="requisitos">2. Requisitos Previos</h1>
+
+<h2>Software Necesario</h2>
+<ul>
+<li><strong>Android Studio</strong> (Hedgehog o superior)<br>
+Descarga: <a href="https://developer.android.com/studio">https://developer.android.com/studio</a></li>
+<li><strong>PHP</strong> (para desarrollo local, opcional)<br>
+XAMPP, WAMP o similar</li>
+<li><strong>Git</strong> (opcional pero recomendado)</li>
+</ul>
+
+<h2>Cuentas Necesarias</h2>
+<ul>
+<li><strong>Google Cloud Console</strong><br>
+- API Key para Google Maps<br>
+- Proyecto Firebase (para push notifications)</li>
+<li><strong>Hosting con PHP + MySQL</strong><br>
+Recomendado: Hosting con cPanel que soporte PHP 7+ y MySQL 5.7+</li>
+</ul>
+
+<h1 id="estructura">3. Estructura del Proyecto</h1>
+
+<pre>
+Pet2/
+├── app/
+│   ├── src/main/
+│   │   ├── java/com/example/pet/
+│   │   │   ├── MainActivity.kt          (Navegación principal)
+│   │   │   ├── MaikPetApplication.kt    (Aplicación Hilt)
+│   │   │   ├── data/
+│   │   │   │   ├── api/
+│   │   │   │   │   └── MaikPetApi.kt    (Interface Retrofit)
+│   │   │   │   ├── model/
+│   │   │   │   │   └── Models.kt       (Modelos de datos)
+│   │   │   │   └── repository/
+│   │   │   │       ├── MaikPetRepository.kt
+│   │   │   │       └── GeocodingRepository.kt
+│   │   │   ├── di/
+│   │   │   │   └── NetworkModule.kt     (Módulo Hilt)
+│   │   │   ├── firebase/
+│   │   │   │   └── MaikPetFirebaseService.kt
+│   │   │   ├── ui/
+│   │   │   │   ├── components/
+│   │   │   │   │   └── Components.kt
+│   │   │   │   ├── screens/
+│   │   │   │   │   ├── MapaScreen.kt
+│   │   │   │   │   ├── AdopcionScreen.kt
+│   │   │   │   │   ├── DarAdopcionScreen.kt
+│   │   │   │   │   ├── MisMascotasScreen.kt
+│   │   │   │   │   ├── EditarMascotaScreen.kt
+│   │   │   │   │   ├── LoginScreen.kt
+│   │   │   │   │   └── AcercaDeScreen.kt
+│   │   │   │   └── theme/
+│   │   │   │       ├── Theme.kt
+│   │   │   │       └── Color.kt
+│   │   │   ├── util/
+│   │   │   │   └── SoundPlayer.kt
+│   │   │   ├── worker/
+│   │   │   │   └── CheckNewMascotasWorker.kt
+│   │   │   └── viewmodel/
+│   │   │       └── MainViewModel.kt
+│   │   ├── res/
+│   │   │   ├── raw/                     (sonidos de ladrido/maullido)
+│   │   │   └── values/
+│   │   └── AndroidManifest.xml
+│   └── build.gradle.kts
+├── build.gradle.kts
+├── settings.gradle.kts
+├── gradle.properties
+└── MANUAL.md
+</pre>
+
+<h1 id="backend">4. Backend PHP</h1>
+
+<p class="note"><strong>Nota:</strong> Crear una carpeta <code>pet/</code> en el servidor web. Todos los archivos van ahí.</p>
+
+<h2>4.1 config.php (Conexión a BD)</h2>
+<pre>&lt;?php
+header('Content-Type: application/json; charset=utf-8');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+// ========== CONFIGURACIÓN DE TU BASE DE DATOS ==========
+define('DB_HOST', '192.185.112.105');
+define('DB_USER', 'lmcostur_macostas');
+define('DB_PASS', 'r2rE6h3r9W');
+define('DB_NAME', 'lmcostur_test');
+define('DB_PORT', 3306);
+
+// Iniciar sesión
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.use_only_cookies', 1);
+    ini_set('session.cookie_secure', 0);
+    session_start();
+}
+
+/**
+ * Obtener conexión a la base de datos
+ */
+function getConnection() {
+    static $conn = null;
+    
+    if ($conn === null) {
+        $conn = @new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
+        
+        if ($conn-&gt;connect_error) {
+            error_log("Error de conexión MySQL: " . $conn-&gt;connect_error);
+            http_response_code(500);
+            echo json_encode(['error' =&gt; 'Error de conexión a la base de datos']);
+            exit();
+        }
+        
+        $conn-&gt;set_charset("utf8mb4");
+    }
+    
+    return $conn;
+}
+
+/**
+ * Verificar si el usuario está logueado
+ */
+function isLoggedIn() {
+    return isset($_SESSION['usuario_id']) &amp;&amp; !empty($_SESSION['usuario_id']);
+}
+
+/**
+ * Responder con JSON
+ */
+function jsonResponse($data, $status = 200) {
+    http_response_code($status);
+    echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    exit();
+}
+?&gt;</pre>
+
+<h2>4.2 register.php (Registro)</h2>
+<pre>&lt;?php
+error_reporting(0);
+ini_set('display_errors', 0);
+header('Content-Type: application/json; charset=utf-8');
+require_once 'config.php';
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'Método no permitido']);
+    exit;
+}
+
+$data = json_decode(file_get_contents('php://input'), true);
+
+$nombre = trim($data['nombre'] ?? '');
+$direccion = trim($data['direccion'] ?? '');
+$telefono = trim($data['telefono'] ?? '');
+$email = trim($data['email'] ?? '');
+$password = $data['password'] ?? '';
+
+if (empty($nombre) || empty($email) || empty($password)) {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'Todos los campos son obligatorios']);
+    exit;
+}
+
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'Email inválido']);
+    exit;
+}
+
+$conn = getConnection();
+
+// Verificar si el email ya existe
+$check = $conn-&gt;query("SELECT id FROM usuarios WHERE email = '$email'");
+if ($check-&gt;num_rows &gt; 0) {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'El email ya está registrado']);
+    exit;
+}
+
+$passwordHash = password_hash($password, PASSWORD_DEFAULT);
+
+$sql = "INSERT INTO usuarios (nombre, direccion, telefono, email, password) VALUES ('$nombre', '$direccion', '$telefono', '$email', '$passwordHash')";
+
+if ($conn-&gt;query($sql)) {
+    $_SESSION['usuario_id'] = $conn-&gt;insert_id;
+    $_SESSION['usuario_nombre'] = $nombre;
+    $_SESSION['usuario_email'] = $email;
+    
+    echo json_encode([
+        'success' =&gt; true,
+        'message' =&gt; 'Registro exitoso',
+        'user' =&gt; [
+            'id' =&gt; $conn-&gt;insert_id,
+            'nombre' =&gt; $nombre,
+            'email' =&gt; $email
+        ]
+    ]);
+} else {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'Error al registrar']);
+}
+?&gt;</pre>
+
+<h2>4.3 login.php (Inicio de sesión)</h2>
+<pre>&lt;?php
+error_reporting(0);
+ini_set('display_errors', 0);
+header('Content-Type: application/json; charset=utf-8');
+require_once 'config.php';
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'Método no permitido']);
+    exit;
+}
+
+$data = json_decode(file_get_contents('php://input'), true);
+
+$email = trim($data['email'] ?? '');
+$password = $data['password'] ?? '';
+
+if (empty($email) || empty($password)) {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'Email y password son obligatorios']);
+    exit;
+}
+
+$conn = getConnection();
+$result = $conn-&gt;query("SELECT * FROM usuarios WHERE email = '$email'");
+
+if ($result-&gt;num_rows === 0) {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'Credenciales inválidas']);
+    exit;
+}
+
+$user = $result-&gt;fetch_assoc();
+
+if (!password_verify($password, $user['password'])) {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'Credenciales inválidas']);
+    exit;
+}
+
+$_SESSION['usuario_id'] = $user['id'];
+$_SESSION['usuario_nombre'] = $user['nombre'];
+$_SESSION['usuario_email'] = $user['email'];
+
+echo json_encode([
+    'success' =&gt; true,
+    'message' =&gt; 'Login exitoso',
+    'user' =&gt; [
+        'id' =&gt; $user['id'],
+        'nombre' =&gt; $user['nombre'],
+        'email' =&gt; $user['email']
+    ]
+]);
+?&gt;</pre>
+
+<h2>4.4 get_mascotas.php (Todas las mascotas)</h2>
+<pre>&lt;?php
+error_reporting(0);
+ini_set('display_errors', 0);
+header('Content-Type: application/json; charset=utf-8');
+require_once 'config.php';
+
+// Auto-eliminar mascotas de más de 30 días
+$conn = getConnection();
+$conn-&gt;query("DELETE FROM mascotas WHERE fecha_creacion &lt; DATE_SUB(NOW(), INTERVAL 30 DAY)");
+
+$result = $conn-&gt;query("
+    SELECT m.*, u.nombre as dueno_nombre, u.telefono as dueno_telefono, u.email as dueno_email
+    FROM mascotas m
+    LEFT JOIN usuarios u ON m.usuario_id = u.id
+    ORDER BY m.fecha_creacion DESC
+");
+
+$mascotas = [];
+while ($row = $result-&gt;fetch_assoc()) {
+    $mascotas[] = [
+        'id' =&gt; (int)$row['id'],
+        'nombre' =&gt; $row['nombre'],
+        'tipo' =&gt; $row['tipo'],
+        'edad_meses' =&gt; (int)$row['edad_meses'],
+        'vacunas' =&gt; $row['vacunas'],
+        'descripcion' =&gt; $row['descripcion'],
+        'direccion' =&gt; $row['direccion'],
+        'lat' =&gt; $row['lat'] ? (float)$row['lat'] : null,
+        'lng' =&gt; $row['lng'] ? (float)$row['lng'] : null,
+        'imagen' =&gt; $row['imagen'],
+        'dueno' =&gt; [
+            'nombre' =&gt; $row['dueno_nombre'],
+            'telefono' =&gt; $row['dueno_telefono'],
+            'email' =&gt; $row['dueno_email']
+        ]
+    ];
+}
+
+echo json_encode($mascotas);
+?&gt;</pre>
+
+<h2>4.5 get_mis_mascotas.php (Mascotas del usuario)</h2>
+<pre>&lt;?php
+error_reporting(0);
+ini_set('display_errors', 0);
+header('Content-Type: application/json; charset=utf-8');
+require_once 'config.php';
+
+if (!isLoggedIn()) {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'No autorizado']);
+    exit;
+}
+
+$conn = getConnection();
+$usuario_id = $_SESSION['usuario_id'];
+
+$result = $conn-&gt;query("
+    SELECT m.*, u.nombre as dueno_nombre, u.telefono as dueno_telefono, u.email as dueno_email
+    FROM mascotas m
+    LEFT JOIN usuarios u ON m.usuario_id = u.id
+    WHERE m.usuario_id = $usuario_id
+    ORDER BY m.fecha_creacion DESC
+");
+
+$mascotas = [];
+while ($row = $result-&gt;fetch_assoc()) {
+    $mascotas[] = [
+        'id' =&gt; (int)$row['id'],
+        'nombre' =&gt; $row['nombre'],
+        'tipo' =&gt; $row['tipo'],
+        'edad_meses' =&gt; (int)$row['edad_meses'],
+        'vacunas' =&gt; $row['vacunas'],
+        'descripcion' =&gt; $row['descripcion'],
+        'direccion' =&gt; $row['direccion'],
+        'lat' =&gt; $row['lat'] ? (float)$row['lat'] : null,
+        'lng' =&gt; $row['lng'] ? (float)$row['lng'] : null,
+        'imagen' =&gt; $row['imagen'],
+        'dueno' =&gt; [
+            'nombre' =&gt; $row['dueno_nombre'],
+            'telefono' =&gt; $row['dueno_telefono'],
+            'email' =&gt; $row['dueno_email']
+        ]
+    ];
+}
+
+echo json_encode($mascotas);
+?&gt;</pre>
+
+<h2>4.6 add_mascota.php (Agregar mascota)</h2>
+<pre>&lt;?php
+error_reporting(0);
+ini_set('display_errors', 0);
+header('Content-Type: application/json; charset=utf-8');
+require_once 'config.php';
+
+if (!isLoggedIn()) {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'No autorizado']);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'Método no permitido']);
+    exit;
+}
+
+$data = json_decode(file_get_contents('php://input'), true);
+
+$nombre = trim($data['nombre'] ?? '');
+$tipo = trim($data['tipo'] ?? '');
+$edad_meses = intval($data['edad_meses'] ?? 0);
+$vacunas = trim($data['vacunas'] ?? '');
+$descripcion = trim($data['descripcion'] ?? '');
+$direccion = trim($data['direccion'] ?? '');
+$lat = isset($data['lat']) &amp;&amp; $data['lat'] !== null ? floatval($data['lat']) : null;
+$lng = isset($data['lng']) &amp;&amp; $data['lng'] !== null ? floatval($data['lng']) : null;
+$imagen = $data['imagen'] ?? null;
+
+if (empty($nombre) || empty($tipo) || $edad_meses &lt;= 0 || empty($vacunas) || empty($direccion)) {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'Todos los campos son obligatorios']);
+    exit;
+}
+
+// Validar que no sea venta o reproduccion
+$palabrasProhibidas = [
+    'venta', 'vendo', 'precio', 'dolares', 'ufs', 'u$s', 
+    'comprar', 'compro', 'costo', 'valor', 'permuta', 
+    'cambio', 'canje', 'cruza', 'cruzar', 'aparear', 
+    'monta', 'reproducir', 'cria', 'criar', 'pedigri', 'acoplar', 'cubrir'
+];
+$descripcionLower = mb_strtolower($descripcion);
+
+foreach ($palabrasProhibidas as $palabra) {
+    if (strpos($descripcionLower, $palabra) !== false) {
+        echo json_encode(['success' =&gt; false, 'error' =&gt; 'No se permiten ventas, cruzas ni permutas. Solo adopciones gratuitas.']);
+        exit;
+    }
+}
+
+$conn = getConnection();
+$usuario_id = $_SESSION['usuario_id'];
+
+$nombre_esc = $conn-&gt;real_escape_string($nombre);
+$tipo_esc = $conn-&gt;real_escape_string($tipo);
+$vacunas_esc = $conn-&gt;real_escape_string($vacunas);
+$descripcion_esc = $conn-&gt;real_escape_string($descripcion);
+$direccion_esc = $conn-&gt;real_escape_string($direccion);
+$lat_val = $lat ?? 'NULL';
+$lng_val = $lng ?? 'NULL';
+$imagen_val = $imagen ? "'" . $conn-&gt;real_escape_string($imagen) . "'" : 'NULL';
+
+$sql = "INSERT INTO mascotas (usuario_id, nombre, tipo, edad_meses, vacunas, descripcion, direccion, lat, lng, imagen) VALUES ($usuario_id, '$nombre_esc', '$tipo_esc', $edad_meses, '$vacunas_esc', '$descripcion_esc', '$direccion_esc', $lat_val, $lng_val, $imagen_val)";
+
+$result = $conn-&gt;query($sql);
+
+if ($result) {
+    $id = $conn-&gt;insert_id;
+    echo json_encode([
+        'success' =&gt; true,
+        'message' =&gt; 'Mascota registrada correctamente',
+        'id' =&gt; $id
+    ]);
+} else {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'Error al registrar: ' . $conn-&gt;error]);
+}
+?&gt;</pre>
+
+<h2>4.7 update_mascota.php (Actualizar mascota)</h2>
+<pre>&lt;?php
+error_reporting(0);
+ini_set('display_errors', 0);
+header('Content-Type: application/json; charset=utf-8');
+require_once 'config.php';
+
+if (!isLoggedIn()) {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'No autorizado']);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'Solo POST']);
+    exit;
+}
+
+$data = json_decode(file_get_contents('php://input'), true);
+
+$id = intval($data['id'] ?? 0);
+$nombre = trim($data['nombre'] ?? '');
+$tipo = trim($data['tipo'] ?? '');
+$edad_meses = intval($data['edad_meses'] ?? 0);
+$vacunas = trim($data['vacunas'] ?? '');
+$descripcion = trim($data['descripcion'] ?? '');
+$direccion = trim($data['direccion'] ?? '');
+$lat = isset($data['lat']) &amp;&amp; $data['lat'] !== null ? floatval($data['lat']) : null;
+$lng = isset($data['lng']) &amp;&amp; $data['lng'] !== null ? floatval($data['lng']) : null;
+$imagen = $data['imagen'] ?? null;
+
+if ($id &lt;= 0) {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'ID inválido']);
+    exit;
+}
+
+if (empty($nombre) || empty($tipo) || $edad_meses &lt;= 0 || empty($vacunas)) {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'Campos requeridos']);
+    exit;
+}
+
+// Validar que no sea venta o reproduccion
+$palabrasProhibidas = [
+    'venta', 'vendo', 'precio', 'dolares', 'ufs', 'u$s', 
+    'comprar', 'compro', 'costo', 'valor', 'permuta', 
+    'cambio', 'canje', 'cruza', 'cruzar', 'aparear', 
+    'monta', 'reproducir', 'cria', 'criar', 'pedigri', 'acoplar', 'cubrir'
+];
+$descripcionLower = mb_strtolower($descripcion);
+
+foreach ($palabrasProhibidas as $palabra) {
+    if (strpos($descripcionLower, $palabra) !== false) {
+        echo json_encode(['success' =&gt; false, 'error' =&gt; 'No se permiten ventas, cruzas ni permutas. Solo adopciones gratuitas.']);
+        exit;
+    }
+}
+
+$conn = getConnection();
+$usuario_id = $_SESSION['usuario_id'];
+
+// Verificar propiedad
+$check = $conn-&gt;query("SELECT id FROM mascotas WHERE id = $id AND usuario_id = $usuario_id");
+if ($check-&gt;num_rows === 0) {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'No autorizado']);
+    exit;
+}
+
+$descripcion_esc = $conn-&gt;real_escape_string($descripcion);
+$direccion_esc = $conn-&gt;real_escape_string($direccion);
+$lat_val = $lat ?? 'NULL';
+$lng_val = $lng ?? 'NULL';
+$imagen_val = $imagen ? "'" . $conn-&gt;real_escape_string($imagen) . "'" : 'NULL';
+
+$sql = "UPDATE mascotas SET nombre='$nombre', tipo='$tipo', edad_meses=$edad_meses, vacunas='$vacunas', descripcion='$descripcion_esc', direccion='$direccion_esc', lat=$lat_val, lng=$lng_val, imagen=$imagen_val WHERE id=$id AND usuario_id=$usuario_id";
+
+$result = $conn-&gt;query($sql);
+
+if ($result) {
+    echo json_encode([
+        'success' =&gt; true,
+        'message' =&gt; 'Mascota actualizada correctamente'
+    ]);
+} else {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'Error SQL: ' . $conn-&gt;error]);
+}
+?&gt;</pre>
+
+<h2>4.8 delete_mascota.php (Eliminar mascota)</h2>
+<pre>&lt;?php
+error_reporting(0);
+ini_set('display_errors', 0);
+header('Content-Type: application/json; charset=utf-8');
+require_once 'config.php';
+
+if (!isLoggedIn()) {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'No autorizado']);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'Solo DELETE']);
+    exit;
+}
+
+$data = json_decode(file_get_contents('php://input'), true);
+$id = intval($data['id'] ?? 0);
+
+if ($id &lt;= 0) {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'ID inválido']);
+    exit;
+}
+
+$conn = getConnection();
+$usuario_id = $_SESSION['usuario_id'];
+
+$result = $conn-&gt;query("DELETE FROM mascotas WHERE id = $id AND usuario_id = $usuario_id");
+
+if ($result) {
+    echo json_encode(['success' =&gt; true, 'message' =&gt; 'Mascota eliminada']);
+} else {
+    echo json_encode(['success' =&gt; false, 'error' =&gt; 'Error al eliminar']);
+}
+?&gt;</pre>
+
+<h2>4.9 logout.php</h2>
+<pre>&lt;?php
+error_reporting(0);
+ini_set('display_errors', 0);
+header('Content-Type: application/json; charset=utf-8');
+require_once 'config.php';
+
+session_destroy();
+echo json_encode(['success' =&gt; true, 'message' =&gt; 'Sesión cerrada']);
+?&gt;</pre>
+
+<h2>4.10 get_session.php</h2>
+<pre>&lt;?php
+error_reporting(0);
+ini_set('display_errors', 0);
+header('Content-Type: application/json; charset=utf-8');
+require_once 'config.php';
+
+if (isLoggedIn()) {
+    echo json_encode([
+        'logged_in' =&gt; true,
+        'user' =&gt; [
+            'id' =&gt; $_SESSION['usuario_id'],
+            'nombre' =&gt; $_SESSION['usuario_nombre'],
+            'email' =&gt; $_SESSION['usuario_email']
+        ]
+    ]);
+} else {
+    echo json_encode(['logged_in' =&gt; false]);
+}
+?&gt;</pre>
+
+<h1 id="basedatos">5. Base de Datos</h1>
+
+<h2>Script SQL Completo</h2>
+<pre>-- Crear base de datos
+CREATE DATABASE IF NOT EXISTS lmcostur_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+USE lmcostur_test;
+
+-- Tabla de usuarios
+CREATE TABLE IF NOT EXISTS usuarios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    direccion VARCHAR(255) DEFAULT '',
+    telefono VARCHAR(20) DEFAULT '',
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    fcm_token VARCHAR(255) DEFAULT NULL,
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabla de mascotas
+CREATE TABLE IF NOT EXISTS mascotas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    tipo ENUM('Perro', 'Gato') NOT NULL,
+    edad_meses INT NOT NULL,
+    vacunas ENUM('Si', 'No') NOT NULL DEFAULT 'No',
+    descripcion TEXT,
+    direccion VARCHAR(255) NOT NULL,
+    lat DOUBLE DEFAULT NULL,
+    lng DOUBLE DEFAULT NULL,
+    imagen MEDIUMTEXT DEFAULT NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    INDEX idx_usuario (usuario_id),
+    INDEX idx_fecha (fecha_creacion)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;</pre>
+
+<h2>Cambiar columna imagen a MEDIUMTEXT</h2>
+<p class="warning"><strong>Importante:</strong> Las imágenes Base64 son largas. VARCHAR(255) no es suficiente. Usar MEDIUMTEXT.</p>
+<pre>ALTER TABLE mascotas MODIFY COLUMN imagen MEDIUMTEXT DEFAULT NULL;</pre>
+
+<h1 id="android">6. Android App</h1>
+
+<h2>6.1 Crear Proyecto en Android Studio</h2>
+<ol>
+<li>Abrir Android Studio</li>
+<li>File → New → New Project</li>
+<li>Seleccionar "Empty Activity"</li>
+<li>Nombre: <code>Pet</code></li>
+<li>Package: <code>com.example.pet</code></li>
+<li>Minimum SDK: <strong>API 26</strong> (Android 8.0)</li>
+<li>Language: <strong>Kotlin</strong></li>
+<li>Click en "Finish"</li>
+</ol>
+
+<h2>6.2 build.gradle.kts (nivel proyecto)</h2>
+<pre>plugins {
+    id("com.android.application") version "8.2.0" apply false
+    id("org.jetbrains.kotlin.android") version "1.9.20" apply false
+    id("com.google.dagger.hilt.android") version "2.48" apply false
+    id("com.google.gms.google-services") version "4.4.0" apply false
+    id("com.google.devtools.ksp") version "1.9.20-1.0.14" apply false
+}</pre>
+
+<h2>6.3 settings.gradle.kts</h2>
+<pre>pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = "Pet"
+include(":app")</pre>
+
+<h2>6.4 app/build.gradle.kts</h2>
+<pre>plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("com.google.dagger.hilt.android")
+    id("com.google.gms.google-services")
+    id("com.google.devtools.ksp")
+    kotlin("kapt")
+}
+
+android {
+    namespace = "com.example.pet"
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "com.example.pet"
+        minSdk = 26
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables {
+            useSupportLibrary = true
+        }
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+    buildFeatures {
+        compose = true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.5"
+    }
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+}
+
+dependencies {
+    // Core
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+    implementation("androidx.activity:activity-compose:1.8.1")
+    
+    // Compose
+    implementation(platform("androidx.compose:compose-bom:2023.10.01"))
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
+    
+    // Hilt
+    implementation("com.google.dagger:hilt-android:2.48")
+    kapt("com.google.dagger:hilt-android-compiler:2.48")
+    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+    
+    // Retrofit
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    
+    // Google Maps
+    implementation("com.google.maps.android:maps-compose:4.3.0")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+    
+    // Coil for images
+    implementation("io.coil-kt:coil-compose:2.5.0")
+    
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:32.6.0"))
+    implementation("com.google.firebase:firebase-messaging-ktx")
+    
+    // WorkManager
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation("androidx.hilt:hilt-work:1.1.0")
+    kapt("androidx.hilt:hilt-compiler:1.1.0")
+    
+    // Testing
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation(platform("androidx.compose:compose-bom:2023.10.01"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+}
+
+kapt {
+    correctErrorTypes = true
+}</pre>
+
+<h2>6.5 AndroidManifest.xml</h2>
+<pre>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"&gt;
+
+    &lt;uses-permission android:name="android.permission.INTERNET" /&gt;
+    &lt;uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /&gt;
+    &lt;uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /&gt;
+    &lt;uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" /&gt;
+    &lt;uses-permission android:name="android.permission.POST_NOTIFICATIONS" /&gt;
+    &lt;uses-permission android:name="android.permission.VIBRATE" /&gt;
+    &lt;uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" /&gt;
+    &lt;uses-permission android:name="android.permission.CAMERA" /&gt;
+    &lt;uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" /&gt;
+    &lt;uses-feature android:name="android.hardware.camera" android:required="false" /&gt;
+    &lt;uses-feature android:name="android.hardware.camera.autofocus" android:required="false" /&gt;
+
+    &lt;application
+        android:name=".MaikPetApplication"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Pet"
+        android:usesCleartextTraffic="true"&gt;
+        
+        &lt;meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${MAPS_API_KEY}" /&gt;
+        
+        &lt;activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.Pet"&gt;
+            &lt;intent-filter&gt;
+                &lt;action android:name="android.intent.action.MAIN" /&gt;
+                &lt;category android:name="android.intent.category.LAUNCHER" /&gt;
+            &lt;/intent-filter&gt;
+        &lt;/activity&gt;
+
+        &lt;service
+            android:name=".firebase.MaikPetFirebaseService"
+            android:exported="false"&gt;
+            &lt;intent-filter&gt;
+                &lt;action android:name="com.google.firebase.MESSAGING_EVENT" /&gt;
+            &lt;/intent-filter&gt;
+        &lt;/service&gt;
+    &lt;/application&gt;
+&lt;/manifest&gt;</pre>
+
+<h2>6.6 gradle.properties</h2>
+<pre>MAPS_API_KEY=AIzaSyBBoKc50__YlKGaRBkP3Z7Xgek2q0bA7IA
+android.useAndroidX=true
+android.enableJetifier=true
+kotlin.code.style=official
+org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8</pre>
+
+<h1 id="apis">7. Configuración de APIs</h1>
+
+<h2>7.1 Google Maps API Key</h2>
+<ol>
+<li>Ir a <a href="https://console.cloud.google.com/">https://console.cloud.google.com/</a></li>
+<li>Crear un proyecto nuevo</li>
+<li>Habilitar "Maps SDK for Android"</li>
+<li>Crear una API Key</li>
+<li>Agregar la key en <code>gradle.properties</code></li>
+</ol>
+
+<h2>7.2 Firebase Setup</h2>
+<ol>
+<li>Ir a <a href="https://console.firebase.google.com/">https://console.firebase.google.com/</a></li>
+<li>Crear un proyecto</li>
+<li>Agregar una app Android con package <code>com.example.pet</code></li>
+<li>Descargar <code>google-services.json</code></li>
+<li>Colocar el archivo en <code>app/google-services.json</code></li>
+<li>Habilitar Cloud Messaging en Firebase</li>
+</ol>
+
+<h1 id="compilar">8. Compilar y Ejecutar</h1>
+
+<h2>Build Debug APK</h2>
+<pre>./gradlew assembleDebug</pre>
+
+<h2>APK Generado</h2>
+<pre>app/build/outputs/apk/debug/app-debug.apk</pre>
+
+<h1 id="servidor">9. Subir al Servidor</h1>
+
+<h2>Archivos PHP a subir</h2>
+<p>Todos los archivos PHP van al servidor en la misma estructura:</p>
+<pre>public_html/pet/
+├── config.php
+├── register.php
+├── login.php
+├── logout.php
+├── get_session.php
+├── get_mascotas.php
+├── get_mis_mascotas.php
+├── add_mascota.php
+├── update_mascota.php
+└── delete_mascota.php</pre>
+
+<h2>Cambiar BASE_URL en Android</h2>
+<p>En <code>NetworkModule.kt</code>, cambiar:</p>
+<pre>private const val BASE_URL = "https://TU_DOMINIO.com/pet/"</pre>
+
+<h1 id="problemas">10. Solución de Problemas</h1>
+
+<h2>Error 500 en PHP</h2>
+<ul>
+<li>Verificar conexión a base de datos en <code>config.php</code></li>
+<li>Verificar que las tablas existan</li>
+<li>Revisar logs de error de PHP</li>
+</ul>
+
+<h2>Imágenes no se guardan</h2>
+<ul>
+<li>Verificar que la columna <code>imagen</code> sea <code>MEDIUMTEXT</code></li>
+<li>Verificar permisos de la base de datos</li>
+</ul>
+
+<h2>Mapa no funciona</h2>
+<ul>
+<li>Verificar API Key de Google Maps</li>
+<li>Verificar que el dispositivo tenga internet</li>
+</ul>
+
+<h2>Sesiones no funcionan</h2>
+<ul>
+<li>Verificar que PHP tenga soporte para sesiones</li>
+<li>Verificar configuración de cookies</li>
+</ul>
+
+<h2>Login no funciona</h2>
+<ul>
+<li>Verificar que el email y password sean correctos</li>
+<li>Revisar que el hash de password coincida</li>
+</ul>
+
+<h1>Notas Importantes</h1>
+
+<ol>
+<li><strong>Imágenes:</strong> Se guardan como Base64 en la base de datos. Una imagen de 300x300px ocupa aproximadamente 50-100KB.</li>
+<li><strong>Auto-eliminación:</strong> Las mascotas se eliminan automáticamente después de 30 días.</li>
+<li><strong>Validación de ventas:</strong> El backend valida que la descripción no contenga palabras relacionadas con venta o cruza.</li>
+<li><strong>Sesiones:</strong> Usan cookies para mantener la sesión del usuario.</li>
+<li><strong>Permisos:</strong> La app requiere ubicación, cámara e internet.</li>
+</ol>
+
+<hr>
+<p style="text-align: center;"><strong>Fin del Documento</strong></p>
+<p style="text-align: center;"><em>MaikPet - Manual de Desarrollo v1.0 - Abril 2026</em></p>
+
+</body>
+</html>
