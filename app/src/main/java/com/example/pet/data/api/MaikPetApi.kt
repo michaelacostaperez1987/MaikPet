@@ -33,4 +33,11 @@ interface MaikPetApi {
     
     @GET("get_session.php")
     suspend fun getSession(): Response<SessionResponse>
+    
+    @POST("save_device_token.php")
+    suspend fun saveDeviceToken(@Body request: TokenRequest): Response<ApiResponse<Nothing>>
 }
+
+data class TokenRequest(
+    val token: String
+)

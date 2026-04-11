@@ -1,12 +1,23 @@
 package com.example.pet.data.repository
 
+import android.content.Context
+import android.util.Log
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import com.example.pet.data.api.MaikPetApi
+import com.example.pet.data.api.TokenRequest
 import com.example.pet.data.model.*
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import com.google.gson.Gson
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import javax.inject.Inject
 import javax.inject.Singleton
+
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_prefs")
 
 sealed class Result<out T> {
     data class Success<T>(val data: T) : Result<T>()
@@ -16,8 +27,14 @@ sealed class Result<out T> {
 
 @Singleton
 class MaikPetRepository @Inject constructor(
-    private val api: MaikPetApi
+    private val api: MaikPetApi,
+    @ApplicationContext private val context: Context,
+    private val gson: Gson
 ) {
+    companion object {
+        private val USER_KEY = stringPreferencesKey("user_data")
+    }
+
     private val _currentUser = MutableStateFlow<Usuario?>(null)
     val currentUser: StateFlow<Usuario?> = _currentUser.asStateFlow()
     
@@ -32,6 +49,56 @@ class MaikPetRepository @Inject constructor(
     
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
+
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    init {
+        scope.launch {
+            loadSavedUser()
+        }
+    }
+
+    private suspend fun loadSavedUser() {
+        try {
+            context.dataStore.data.collect { prefs ->
+                val userJson = prefs[USER_KEY]
+                if (userJson != null) {
+                    try {
+                        val user = gson.fromJson(userJson, Usuario::class.java)
+                        _currentUser.value = user
+                        Log.d("MaikPetRepo", "Usuario cargado desde cache: ${user.nombre}")
+                    } catch (e: Exception) {
+                        Log.e("MaikPetRepo", "Error al parsear usuario guardado", e)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("MaikPetRepo", "Error al cargar usuario guardado", e)
+        }
+    }
+
+    private suspend fun saveUser(user: Usuario) {
+        try {
+            val userJson = gson.toJson(user)
+            context.dataStore.edit { prefs ->
+                prefs[USER_KEY] = userJson
+            }
+            Log.d("MaikPetRepo", "Usuario guardado en cache")
+        } catch (e: Exception) {
+            Log.e("MaikPetRepo", "Error al guardar usuario", e)
+        }
+    }
+
+    private suspend fun clearUser() {
+        try {
+            context.dataStore.edit { prefs ->
+                prefs.remove(USER_KEY)
+            }
+            Log.d("MaikPetRepo", "Usuario eliminado del cache")
+        } catch (e: Exception) {
+            Log.e("MaikPetRepo", "Error al eliminar usuario", e)
+        }
+    }
     
     suspend fun getMascotas(): Result<List<Mascota>> {
         return try {
@@ -162,6 +229,7 @@ class MaikPetRepository @Inject constructor(
                 val body = response.body()
                 if (body?.success == true && body.usuario != null) {
                     _currentUser.value = body.usuario
+                    saveUser(body.usuario)
                     Result.Success(body.usuario)
                 } else {
                     val msg = body?.error ?: "Error al iniciar sesión"
@@ -177,6 +245,18 @@ class MaikPetRepository @Inject constructor(
             Result.Error(msg)
         } finally {
             _isLoading.value = false
+        }
+    }
+    
+    suspend fun sendDeviceToken(token: String): Boolean {
+        return try {
+            Log.d("MaikPetRepo", "Enviando token: $token")
+            val response = api.saveDeviceToken(TokenRequest(token))
+            Log.d("MaikPetRepo", "Token response: ${response.code()}")
+            response.isSuccessful
+        } catch (e: Exception) {
+            Log.e("MaikPetRepo", "Error al enviar token: ${e.message}")
+            false
         }
     }
     
@@ -206,9 +286,12 @@ class MaikPetRepository @Inject constructor(
             api.logout()
             _currentUser.value = null
             _misMascotas.value = emptyList()
+            clearUser()
             Result.Success(true)
         } catch (e: Exception) {
             _currentUser.value = null
+            _misMascotas.value = emptyList()
+            clearUser()
             Result.Success(true)
         }
     }
@@ -220,16 +303,33 @@ class MaikPetRepository @Inject constructor(
                 val body = response.body()
                 if (body?.logueado == true && body.usuario != null) {
                     _currentUser.value = body.usuario
+                    saveUser(body.usuario)
                     Result.Success(body.usuario)
                 } else {
-                    _currentUser.value = null
+                    val cachedUser = _currentUser.value
+                    if (cachedUser != null) {
+                        Result.Success(cachedUser)
+                    } else {
+                        _currentUser.value = null
+                        Result.Success(null)
+                    }
+                }
+            } else {
+                val cachedUser = _currentUser.value
+                if (cachedUser != null) {
+                    Result.Success(cachedUser)
+                } else {
                     Result.Success(null)
                 }
+            }
+        } catch (e: Exception) {
+            val cachedUser = _currentUser.value
+            if (cachedUser != null) {
+                Log.d("MaikPetRepo", "Usando usuario cache por error de conexión")
+                Result.Success(cachedUser)
             } else {
                 Result.Success(null)
             }
-        } catch (e: Exception) {
-            Result.Success(null)
         }
     }
 }

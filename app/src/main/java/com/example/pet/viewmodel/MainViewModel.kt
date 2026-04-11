@@ -1,5 +1,6 @@
 package com.example.pet.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pet.data.model.MascotaRequest
@@ -7,7 +8,9 @@ import com.example.pet.data.model.Usuario
 import com.example.pet.data.repository.GeocodingRepository
 import com.example.pet.data.repository.MaikPetRepository
 import com.example.pet.data.repository.Result
+import com.example.pet.firebase.MaikPetFirebaseService
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -34,15 +37,16 @@ enum class Screen {
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val repository: MaikPetRepository,
-    private val geocodingRepository: GeocodingRepository
+    private val geocodingRepository: GeocodingRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
     
     init {
-        observeRepository()
         checkSession()
+        observeRepository()
     }
     
     private fun observeRepository() {
@@ -78,6 +82,14 @@ class MainViewModel @Inject constructor(
             when (val result = repository.checkSession()) {
                 is Result.Success -> {
                     if (result.data != null) {
+                        MaikPetFirebaseService.saveUserEmail(context, result.data.email)
+                        
+                        // Enviar token FCM si existe
+                        val token = MaikPetFirebaseService.getToken(context)
+                        if (token != null) {
+                            repository.sendDeviceToken(token)
+                        }
+                        
                         loadMascotas()
                         loadMisMascotas()
                     } else {
@@ -173,6 +185,14 @@ class MainViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, error = null) }
             when (val result = repository.login(email, password)) {
                 is Result.Success -> {
+                    MaikPetFirebaseService.saveUserEmail(context, result.data.email)
+                    
+                    // Enviar token FCM si existe
+                    val token = MaikPetFirebaseService.getToken(context)
+                    if (token != null) {
+                        repository.sendDeviceToken(token)
+                    }
+                    
                     _uiState.update { it.copy(
                         toastMessage = "Bienvenido ${result.data.nombre}",
                         currentScreen = Screen.Mapa

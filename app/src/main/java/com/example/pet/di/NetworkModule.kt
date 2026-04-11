@@ -1,6 +1,7 @@
 package com.example.pet.di
 
 import com.example.pet.data.api.MaikPetApi
+import com.google.gson.Gson
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -19,6 +20,12 @@ import javax.inject.Singleton
 object NetworkModule {
     
     private const val BASE_URL = "https://lmcosturas.com/pet/"
+    
+    @Provides
+    @Singleton
+    fun provideGson(): Gson {
+        return Gson()
+    }
     
     @Provides
     @Singleton
