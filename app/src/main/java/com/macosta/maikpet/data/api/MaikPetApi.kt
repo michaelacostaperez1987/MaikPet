@@ -1,6 +1,13 @@
 package com.macosta.maikpet.data.api
 
-import com.macosta.maikpet.data.model.*
+import com.macosta.maikpet.data.model.ApiResponse
+import com.macosta.maikpet.data.model.Mascota
+import com.macosta.maikpet.data.model.MascotaRequest
+import com.macosta.maikpet.data.model.SessionResponse
+import com.macosta.maikpet.data.model.Usuario
+import com.macosta.maikpet.data.model.DeleteRequest
+import com.macosta.maikpet.data.model.LoginRequest
+import com.macosta.maikpet.data.model.RegisterRequest
 import retrofit2.Response
 import retrofit2.http.*
 import retrofit2.http.Path
@@ -36,7 +43,17 @@ interface MaikPetApi {
     
     @POST("save_device_token.php")
     suspend fun saveDeviceToken(@Body request: TokenRequest): Response<ApiResponse<Nothing>>
+
+    @POST("update_perfil.php")
+    suspend fun updatePerfil(@Body request: UpdatePerfilRequest): Response<ApiResponse<Nothing>>
 }
+
+data class UpdatePerfilRequest(
+    val id: Int,
+    val nombre: String,
+    val direccion: String,
+    val telefono: String
+)
 
 data class TokenRequest(
     val token: String

@@ -31,7 +31,7 @@ data class MainUiState(
 )
 
 enum class Screen {
-    Home, Mapa, Adopcion, MisMascotas, DarAdopcion, Login, AcercaDe, Terminos, EditarMascota
+    Home, Mapa, Adopcion, MisMascotas, DarAdopcion, Login, AcercaDe, Terminos, EditarMascota, EditarPerfil
 }
 
 @HiltViewModel
@@ -179,6 +179,27 @@ class MainViewModel @Inject constructor(
     fun deleteMascotaFromEdit() {
         val mascotaId = _uiState.value.selectedMascota?.id ?: return
         deleteMascota(mascotaId)
+    }
+
+    fun updatePerfil(nombre: String, direccion: String, telefono: String) {
+        val currentUser = _uiState.value.currentUser ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            when (val result = repository.updatePerfil(currentUser.id, nombre, direccion, telefono)) {
+                is Result.Success -> {
+                    val updatedUser = currentUser.copy(nombre = nombre, direccion = direccion, telefono = telefono)
+                    _uiState.update { it.copy(
+                        currentUser = updatedUser,
+                        isLoading = false,
+                        toastMessage = "Perfil actualizado correctamente"
+                    )}
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isLoading = false, error = result.message) }
+                }
+                is Result.Loading -> {}
+            }
+        }
     }
     
     fun login(email: String, password: String) {

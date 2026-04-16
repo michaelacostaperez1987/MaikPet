@@ -206,12 +206,20 @@ fun MaikPetApp(
                                 isLoading = uiState.isLoading,
                                 isGeocoding = uiState.isGeocoding,
                                 geocodingMessage = uiState.geocodingMessage,
-                                onSave = { nombre, tipo, edad, vacunas, direccion, descripcion, imagen ->
-                                    viewModel.updateMascota(nombre, tipo, edad, vacunas, direccion, descripcion, imagen)
+                                onSave = { nombre, tipo, edad, visas, direccion, descripcion, imagen ->
+                                    viewModel.updateMascota(nombre, tipo, edad, visas, direccion, descripcion, imagen)
                                 },
                                 onBack = { viewModel.navigateTo(Screen.MisMascotas) }
                             )
                         }
+                        Screen.EditarPerfil -> EditarPerfilScreen(
+                            currentUser = uiState.currentUser,
+                            isLoading = uiState.isLoading,
+                            onSave = { nombre, direccion, telefono ->
+                                viewModel.updatePerfil(nombre, direccion, telefono)
+                            },
+                            onBack = { viewModel.navigateTo(Screen.Mapa) }
+                        )
                     }
                 }
             }
@@ -320,6 +328,15 @@ fun MaikPetApp(
                         selected = uiState.currentScreen == Screen.DarAdopcion,
                         onClick = {
                             viewModel.navigateTo(Screen.DarAdopcion)
+                            drawerOpen = false
+                        }
+                    )
+                    DrawerItem(
+                        icon = Icons.Default.Person,
+                        text = "Editar Mi Perfil",
+                        selected = uiState.currentScreen == Screen.EditarPerfil,
+                        onClick = {
+                            viewModel.navigateTo(Screen.EditarPerfil)
                             drawerOpen = false
                         }
                     )

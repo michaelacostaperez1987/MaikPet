@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.macosta.maikpet.data.api.MaikPetApi
 import com.macosta.maikpet.data.api.TokenRequest
+import com.macosta.maikpet.data.api.UpdatePerfilRequest
 import com.macosta.maikpet.data.model.*
 import com.google.gson.Gson
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -258,6 +259,30 @@ class MaikPetRepository @Inject constructor(
                 if (body?.success == true) {
                     getMisMascotas()
                     getMascotas()
+                    Result.Success(true)
+                } else {
+                    Result.Error(body?.error ?: "Error al actualizar")
+                }
+            } else {
+                Result.Error("Error del servidor")
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Error de conexión")
+        } finally {
+            _isLoading.value = false
+        }
+    }
+
+    suspend fun updatePerfil(id: Int, nombre: String, direccion: String, telefono: String): Result<Boolean> {
+        return try {
+            _isLoading.value = true
+            val response = api.updatePerfil(UpdatePerfilRequest(id, nombre, direccion, telefono))
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body?.success == true) {
+                    val updatedUser = _currentUser.value?.copy(nombre = nombre, direccion = direccion, telefono = telefono)
+                    _currentUser.value = updatedUser
+                    updatedUser?.let { saveUser(it) }
                     Result.Success(true)
                 } else {
                     Result.Error(body?.error ?: "Error al actualizar")
