@@ -17,8 +17,10 @@ import com.macosta.maikpet.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TerminosScreen(
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    showPrivacyOnly: Boolean = false
 ) {
+    var mostrarPrivacidad by remember { mutableStateOf(showPrivacyOnly) }
     Scaffold(
         topBar = {
             TopAppBar(

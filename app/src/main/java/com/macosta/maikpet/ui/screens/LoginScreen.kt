@@ -1,6 +1,18 @@
 package com.macosta.maikpet.ui.screens
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -22,6 +34,8 @@ fun LoginScreen(
     error: String?,
     onLogin: (email: String, password: String) -> Unit,
     onRegister: (nombre: String, direccion: String, telefono: String, email: String, password: String, edad: Int) -> Unit,
+    onViewPrivacy: () -> Unit = {},
+    onViewTerms: () -> Unit = {},
     onClearError: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -36,7 +50,9 @@ fun LoginScreen(
     var regEmail by remember { mutableStateOf("") }
     var regPassword by remember { mutableStateOf("") }
     var regEdad by remember { mutableStateOf("") }
+    var acceptPrivacy by remember { mutableStateOf(false) }
     var acceptTerms by remember { mutableStateOf(false) }
+    var showPrivacyError by remember { mutableStateOf(false) }
     var showTermsError by remember { mutableStateOf(false) }
     
     val scrollState = rememberScrollState()
@@ -277,14 +293,52 @@ fun LoginScreen(
                 )
                 
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = acceptPrivacy,
+                        onCheckedChange = {
+                            acceptPrivacy = it
+                            showPrivacyError = !it && regNombre.isNotBlank()
+                        },
+                        colors = CheckboxDefaults.colors(checkedColor = Primary)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Acepto la ",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
+                    Text(
+                        text = "Política de Privacidad",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Primary,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable { onViewPrivacy() }
+                    )
+                }
+
+                if (showPrivacyError) {
+                    Text(
+                        text = "Debes aceptar la Política de Privacidad para registrarte",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Error,
+                        modifier = Modifier.padding(start = 32.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Checkbox(
                         checked = acceptTerms,
-                        onCheckedChange = { 
+                        onCheckedChange = {
                             acceptTerms = it
                             showTermsError = !it && regNombre.isNotBlank()
                         },
@@ -300,10 +354,11 @@ fun LoginScreen(
                         text = "Términos y Condiciones",
                         style = MaterialTheme.typography.bodySmall,
                         color = Primary,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable { onViewTerms() }
                     )
                 }
-                
+
                 if (showTermsError) {
                     Text(
                         text = "Debes aceptar los términos para registrarte",
@@ -318,6 +373,10 @@ fun LoginScreen(
                 Button(
                     onClick = {
                         val edad = regEdad.toIntOrNull() ?: 0
+                        if (!acceptPrivacy) {
+                            showPrivacyError = true
+                            return@Button
+                        }
                         if (!acceptTerms) {
                             showTermsError = true
                             return@Button
@@ -331,8 +390,8 @@ fun LoginScreen(
                         .fillMaxWidth()
                         .height(50.dp),
                     enabled = !isLoading && regNombre.isNotBlank() && regDireccion.isNotBlank() &&
-                            regTelefono.isNotBlank() && regEmail.isNotBlank() && regPassword.isNotBlank() && 
-                            acceptTerms && (regEdad.toIntOrNull() ?: 0) >= 18,
+                            regTelefono.isNotBlank() && regEmail.isNotBlank() && regPassword.isNotBlank() &&
+                            acceptPrivacy && acceptTerms && (regEdad.toIntOrNull() ?: 0) >= 18,
                     colors = ButtonDefaults.buttonColors(containerColor = Primary),
                     shape = RoundedCornerShape(30.dp)
                 ) {

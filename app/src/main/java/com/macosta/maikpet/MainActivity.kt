@@ -115,6 +115,8 @@ fun MaikPetApp(
                 onRegister = { nombre, dir, tel, email, pass, edad ->
                     viewModel.register(nombre, dir, tel, email, pass, edad)
                 },
+                onViewPrivacy = { viewModel.navigateTo(Screen.Terminos) },
+                onViewTerms = { viewModel.navigateTo(Screen.Terminos) },
                 onClearError = { viewModel.clearError() }
             )
         } else {
@@ -190,6 +192,8 @@ fun MaikPetApp(
                             onRegister = { nombre, dir, tel, email, pass, edad ->
                                 viewModel.register(nombre, dir, tel, email, pass, edad)
                             },
+                            onViewPrivacy = { viewModel.navigateTo(Screen.Terminos) },
+                            onViewTerms = { viewModel.navigateTo(Screen.Terminos) },
                             onClearError = { viewModel.clearError() }
                         )
                         Screen.AcercaDe -> AcercaDeScreen()
