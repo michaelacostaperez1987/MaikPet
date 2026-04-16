@@ -764,11 +764,11 @@ plugins {
 }
 
 android {
-    namespace 'com.example.pet'
+    namespace 'com.macosta.maikpet'
     compileSdk 35
 
     defaultConfig {
-        applicationId "com.example.pet"
+        applicationId "com.macosta.maikpet"
         minSdk 24
         targetSdk 35
         versionCode 1
@@ -911,9 +911,9 @@ org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
 
 ### 6.5 NetworkModule.kt
 ```kotlin
-package com.example.pet.di
+package com.macosta.maikpet.di
 
-import com.example.pet.data.api.MaikPetApi
+import com.macosta.maikpet.data.api.MaikPetApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -999,7 +999,7 @@ object NetworkModule {
 1. Ir a https://console.firebase.google.com/
 2. Crear un proyecto nuevo
 3. Agregar una app Android:
-   - Package name: `com.example.pet`
+   - Package name: `com.macosta.maikpet`
    - SHA-1 (opcional)
 4. Descargar `google-services.json`
 5. Colocar el archivo en `app/google-services.json`

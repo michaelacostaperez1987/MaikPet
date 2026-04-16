@@ -30,7 +30,7 @@
 -keep class * implements com.google.gson.JsonDeserializer
 
 # Data models
--keep class com.example.pet.data.model.** { *; }
+-keep class com.macosta.maikpet.data.model.** { *; }
 
 # Keep generic signatures for Gson TypeToken
 -keep class com.google.gson.reflect.TypeToken { *; }

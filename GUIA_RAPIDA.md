@@ -60,7 +60,7 @@ MAPS_API_KEY=TU_API_KEY_AQUI
 ### 3.3 Configurar Firebase
 1. Ir a https://console.firebase.google.com/
 2. Crear proyecto
-3. Agregar app Android con package: `com.example.pet`
+3. Agregar app Android con package: `com.macosta.maikpet`
 4. Descargar `google-services.json`
 5. Colocar en `app/google-services.json`
 

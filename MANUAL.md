@@ -704,7 +704,7 @@ ALTER TABLE mascotas MODIFY COLUMN imagen MEDIUMTEXT DEFAULT NULL;
 1. File → New → New Project
 2.选择 "Empty Activity"
 3. Nombre: `Pet`
-4. Package: `com.example.pet`
+4. Package: `com.macosta.maikpet`
 5. Minimum SDK: API 26 (Android 8.0)
 6. Language: Kotlin
 
@@ -755,11 +755,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.pet"
+    namespace = "com.macosta.maikpet"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.pet"
+        applicationId = "com.macosta.maikpet"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
@@ -917,7 +917,7 @@ kapt {
 ### 6. Modelos de datos (Models.kt)
 
 ```kotlin
-package com.example.pet.data.model
+package com.macosta.maikpet.data.model
 
 import com.google.gson.annotations.SerializedName
 
@@ -990,9 +990,9 @@ data class SessionResponse(
 ### 7. API Interface (MaikPetApi.kt)
 
 ```kotlin
-package com.example.pet.data.api
+package com.macosta.maikpet.data.api
 
-import com.example.pet.data.model.*
+import com.macosta.maikpet.data.model.*
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -1030,10 +1030,10 @@ interface MaikPetApi {
 ### 8. Repository (MaikPetRepository.kt)
 
 ```kotlin
-package com.example.pet.data.repository
+package com.macosta.maikpet.data.repository
 
-import com.example.pet.data.api.MaikPetApi
-import com.example.pet.data.model.*
+import com.macosta.maikpet.data.api.MaikPetApi
+import com.macosta.maikpet.data.model.*
 import kotlinx.coroutines.flow.*
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -1245,9 +1245,9 @@ class MaikPetRepository @Inject constructor(
 ### 9. Network Module (NetworkModule.kt)
 
 ```kotlin
-package com.example.pet.di
+package com.macosta.maikpet.di
 
-import com.example.pet.data.api.MaikPetApi
+import com.macosta.maikpet.data.api.MaikPetApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -1316,7 +1316,7 @@ object NetworkModule {
 ### 10. Geocoding Repository
 
 ```kotlin
-package com.example.pet.data.repository
+package com.macosta.maikpet.data.repository
 
 import android.location.Geocoder
 import android.content.Context
@@ -1350,7 +1350,7 @@ class GeocodingRepository @Inject constructor(
 ### 11. Application Class
 
 ```kotlin
-package com.example.pet
+package com.macosta.maikpet
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp
@@ -1379,7 +1379,7 @@ MAPS_API_KEY=AIzaSyBBoKc50__YlKGaRBkP3Z7Xgek2q0bA7IA
 
 1. Ve a https://console.firebase.google.com/
 2. Crea un proyecto
-3. Agrega una app Android con package `com.example.pet`
+3. Agrega una app Android con package `com.macosta.maikpet`
 4. Descarga `google-services.json`
 5. Colócalo en `app/google-services.json`
 6. Habilita Cloud Messaging en Firebase
