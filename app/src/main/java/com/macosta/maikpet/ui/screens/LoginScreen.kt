@@ -50,10 +50,8 @@ fun LoginScreen(
     var regEmail by remember { mutableStateOf("") }
     var regPassword by remember { mutableStateOf("") }
     var regEdad by remember { mutableStateOf("") }
-    var acceptPrivacy by remember { mutableStateOf(false) }
-    var acceptTerms by remember { mutableStateOf(false) }
-    var showPrivacyError by remember { mutableStateOf(false) }
-    var showTermsError by remember { mutableStateOf(false) }
+    var aceptaTyC by remember { mutableStateOf(false) }
+    var showAceptaError by remember { mutableStateOf(false) }
     
     val scrollState = rememberScrollState()
     
@@ -294,74 +292,61 @@ fun LoginScreen(
                 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Row(
+                Card(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    colors = CardDefaults.cardColors(containerColor = Surface.copy(alpha = 0.5f)),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Checkbox(
-                        checked = acceptPrivacy,
-                        onCheckedChange = {
-                            acceptPrivacy = it
-                            showPrivacyError = !it && regNombre.isNotBlank()
-                        },
-                        colors = CheckboxDefaults.colors(checkedColor = Primary)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Acepto la ",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
-                    )
-                    Text(
-                        text = "Política de Privacidad",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Primary,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.clickable { onViewPrivacy() }
-                    )
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "Antes de registrarte, debes aceptar los siguientes documentos:",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = "📄 Términos y Condiciones",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Primary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable { onViewTerms() }
+                        )
+                        Text(
+                            text = "📄 Política de Privacidad",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Primary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable { onViewPrivacy() }
+                        )
+                    }
                 }
 
-                if (showPrivacyError) {
-                    Text(
-                        text = "Debes aceptar la Política de Privacidad para registrarte",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Error,
-                        modifier = Modifier.padding(start = 32.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Checkbox(
-                        checked = acceptTerms,
+                        checked = aceptaTyC,
                         onCheckedChange = {
-                            acceptTerms = it
-                            showTermsError = !it && regNombre.isNotBlank()
+                            aceptaTyC = it
+                            showAceptaError = !it && regNombre.isNotBlank()
                         },
                         colors = CheckboxDefaults.colors(checkedColor = Primary)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Acepto los ",
+                        text = "He leído y acepto los Términos y Condiciones y la Política de Privacidad",
                         style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
-                    )
-                    Text(
-                        text = "Términos y Condiciones",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Primary,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.clickable { onViewTerms() }
+                        color = OnBackground
                     )
                 }
 
-                if (showTermsError) {
+                if (showAceptaError) {
                     Text(
-                        text = "Debes aceptar los términos para registrarte",
+                        text = "Debes aceptar los Términos y Condiciones y la Política de Privacidad para registrarte",
                         style = MaterialTheme.typography.bodySmall,
                         color = Error,
                         modifier = Modifier.padding(start = 32.dp)
@@ -373,12 +358,8 @@ fun LoginScreen(
                 Button(
                     onClick = {
                         val edad = regEdad.toIntOrNull() ?: 0
-                        if (!acceptPrivacy) {
-                            showPrivacyError = true
-                            return@Button
-                        }
-                        if (!acceptTerms) {
-                            showTermsError = true
+                        if (!aceptaTyC) {
+                            showAceptaError = true
                             return@Button
                         }
                         if (edad < 18) {
@@ -391,7 +372,7 @@ fun LoginScreen(
                         .height(50.dp),
                     enabled = !isLoading && regNombre.isNotBlank() && regDireccion.isNotBlank() &&
                             regTelefono.isNotBlank() && regEmail.isNotBlank() && regPassword.isNotBlank() &&
-                            acceptPrivacy && acceptTerms && (regEdad.toIntOrNull() ?: 0) >= 18,
+                            aceptaTyC && (regEdad.toIntOrNull() ?: 0) >= 18,
                     colors = ButtonDefaults.buttonColors(containerColor = Primary),
                     shape = RoundedCornerShape(30.dp)
                 ) {

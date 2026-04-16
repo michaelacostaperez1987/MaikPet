@@ -42,7 +42,13 @@ data class RegisterRequest(
     val telefono: String,
     val email: String,
     val password: String,
-    val edad: Int
+    val edad: Int,
+    @SerializedName("acepta_tyc")
+    val aceptaTyC: Boolean = true,
+    @SerializedName("version_tyc")
+    val versionTyC: String = "1.0",
+    @SerializedName("fecha_aceptacion")
+    val fechaAceptacion: Long = System.currentTimeMillis()
 )
 
 data class MascotaRequest(
