@@ -107,6 +107,12 @@ fun MaikPetApp(
     Box(modifier = Modifier.fillMaxSize()) {
         if (uiState.showHome) {
             HomeScreen(onStartClick = { viewModel.hideHome() })
+        } else if (uiState.currentScreen == Screen.Legal) {
+            LegalScreen(
+                onBack = { viewModel.navigateTo(Screen.Login) },
+                showAsInitial = true,
+                onAccept = { viewModel.navigateTo(Screen.Login) }
+            )
         } else if (!uiState.isLoggedIn) {
             LoginScreen(
                 isLoading = uiState.isLoading,
@@ -115,8 +121,8 @@ fun MaikPetApp(
                 onRegister = { nombre, dir, tel, email, pass, edad ->
                     viewModel.register(nombre, dir, tel, email, pass, edad)
                 },
-                onViewPrivacy = { viewModel.navigateTo(Screen.Terminos) },
-                onViewTerms = { viewModel.navigateTo(Screen.Terminos) },
+                onViewPrivacy = { viewModel.navigateTo(Screen.Legal) },
+                onViewTerms = { viewModel.navigateTo(Screen.Legal) },
                 onClearError = { viewModel.clearError() }
             )
         } else {
@@ -192,13 +198,18 @@ fun MaikPetApp(
                             onRegister = { nombre, dir, tel, email, pass, edad ->
                                 viewModel.register(nombre, dir, tel, email, pass, edad)
                             },
-                            onViewPrivacy = { viewModel.navigateTo(Screen.Terminos) },
-                            onViewTerms = { viewModel.navigateTo(Screen.Terminos) },
+                            onViewPrivacy = { viewModel.navigateTo(Screen.Legal) },
+                            onViewTerms = { viewModel.navigateTo(Screen.Legal) },
                             onClearError = { viewModel.clearError() }
                         )
                         Screen.AcercaDe -> AcercaDeScreen()
                         Screen.Terminos -> TerminosScreen(
                             onBack = { viewModel.navigateTo(Screen.Mapa) }
+                        )
+                        Screen.Legal -> LegalScreen(
+                            onBack = { viewModel.navigateTo(Screen.Login) },
+                            showAsInitial = true,
+                            onAccept = { viewModel.navigateTo(Screen.Login) }
                         )
                         Screen.EditarMascota -> uiState.selectedMascota?.let { mascota ->
                             EditarMascotaScreen(

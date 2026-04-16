@@ -31,7 +31,7 @@ data class MainUiState(
 )
 
 enum class Screen {
-    Home, Mapa, Adopcion, MisMascotas, DarAdopcion, Login, AcercaDe, Terminos, EditarMascota, EditarPerfil
+    Home, Mapa, Adopcion, MisMascotas, DarAdopcion, Login, AcercaDe, Terminos, EditarMascota, EditarPerfil, Legal
 }
 
 @HiltViewModel
