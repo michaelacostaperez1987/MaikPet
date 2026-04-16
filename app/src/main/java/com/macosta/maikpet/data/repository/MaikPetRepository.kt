@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.macosta.maikpet.data.api.MaikPetApi
@@ -33,6 +34,44 @@ class MaikPetRepository @Inject constructor(
 ) {
     companion object {
         private val USER_KEY = stringPreferencesKey("user_data")
+        private val SESSION_TIMESTAMP = longPreferencesKey("session_timestamp")
+        private val SESSION_EXPIRY_DAYS = 7
+    }
+
+    private suspend fun saveSessionTimestamp() {
+        try {
+            context.dataStore.edit { prefs ->
+                prefs[SESSION_TIMESTAMP] = System.currentTimeMillis()
+            }
+        } catch (e: Exception) {
+            Log.e("MaikPetRepo", "Error al guardar timestamp", e)
+        }
+    }
+
+    private suspend fun getSessionTimestamp(): Long? {
+        return try {
+            context.dataStore.data.map { prefs ->
+                prefs[SESSION_TIMESTAMP]
+            }.firstOrNull()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private suspend fun isSessionExpired(): Boolean {
+        val timestamp = getSessionTimestamp() ?: return true
+        val diasTranscurridos = (System.currentTimeMillis() - timestamp) / (1000 * 60 * 60 * 24)
+        return diasTranscurridos > SESSION_EXPIRY_DAYS
+    }
+
+    private suspend fun clearSessionTimestamp() {
+        try {
+            context.dataStore.edit { prefs ->
+                prefs.remove(SESSION_TIMESTAMP)
+            }
+        } catch (e: Exception) {
+            Log.e("MaikPetRepo", "Error al limpiar timestamp", e)
+        }
     }
 
     private val _currentUser = MutableStateFlow<Usuario?>(null)
@@ -69,6 +108,12 @@ class MaikPetRepository @Inject constructor(
                         if (diasTranscurridos > 90) {
                             Log.d("MaikPetRepo", "Datos eliminados: usuario expirado (>90 días)")
                             clearUser()
+                            clearSessionTimestamp()
+                        } else if (isSessionExpired()) {
+                            Log.d("MaikPetRepo", "Sesión expirada (>7 días)")
+                            _currentUser.value = null
+                            clearUser()
+                            clearSessionTimestamp()
                         } else {
                             _currentUser.value = user
                             Log.d("MaikPetRepo", "Usuario cargado desde cache: ${user.nombre}")
@@ -88,6 +133,7 @@ class MaikPetRepository @Inject constructor(
             val userJson = gson.toJson(user)
             context.dataStore.edit { prefs ->
                 prefs[USER_KEY] = userJson
+                prefs[SESSION_TIMESTAMP] = System.currentTimeMillis()
             }
             Log.d("MaikPetRepo", "Usuario guardado en cache")
         } catch (e: Exception) {
@@ -296,11 +342,13 @@ class MaikPetRepository @Inject constructor(
             _currentUser.value = null
             _misMascotas.value = emptyList()
             clearUser()
+            clearSessionTimestamp()
             Result.Success(true)
         } catch (e: Exception) {
             _currentUser.value = null
             _misMascotas.value = emptyList()
             clearUser()
+            clearSessionTimestamp()
             Result.Success(true)
         }
     }
