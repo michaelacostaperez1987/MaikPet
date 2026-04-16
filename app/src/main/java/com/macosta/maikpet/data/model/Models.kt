@@ -25,7 +25,10 @@ data class Usuario(
     val nombre: String = "",
     val email: String = "",
     val direccion: String = "",
-    val telefono: String = ""
+    val telefono: String = "",
+    val edad: Int = 0,
+    @SerializedName("fecha_registro")
+    val fechaRegistro: Long = System.currentTimeMillis()
 )
 
 data class LoginRequest(
@@ -38,7 +41,8 @@ data class RegisterRequest(
     val direccion: String,
     val telefono: String,
     val email: String,
-    val password: String
+    val password: String,
+    val edad: Int
 )
 
 data class MascotaRequest(

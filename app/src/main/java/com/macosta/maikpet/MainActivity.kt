@@ -177,8 +177,8 @@ fun MaikPetApp(
                             isLoading = uiState.isLoading,
                             error = uiState.error,
                             onLogin = { email, password -> viewModel.login(email, password) },
-                            onRegister = { nombre, dir, tel, email, pass -> 
-                                viewModel.register(nombre, dir, tel, email, pass) 
+                            onRegister = { nombre, dir, tel, email, pass, edad ->
+                                viewModel.register(nombre, dir, tel, email, pass, edad)
                             },
                             onClearError = { viewModel.clearError() }
                         )

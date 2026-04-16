@@ -65,8 +65,14 @@ class MaikPetRepository @Inject constructor(
                 if (userJson != null) {
                     try {
                         val user = gson.fromJson(userJson, Usuario::class.java)
-                        _currentUser.value = user
-                        Log.d("MaikPetRepo", "Usuario cargado desde cache: ${user.nombre}")
+                        val diasTranscurridos = (System.currentTimeMillis() - user.fechaRegistro) / (1000 * 60 * 60 * 24)
+                        if (diasTranscurridos > 90) {
+                            Log.d("MaikPetRepo", "Datos eliminados: usuario expirado (>90 días)")
+                            clearUser()
+                        } else {
+                            _currentUser.value = user
+                            Log.d("MaikPetRepo", "Usuario cargado desde cache: ${user.nombre}")
+                        }
                     } catch (e: Exception) {
                         Log.e("MaikPetRepo", "Error al parsear usuario guardado", e)
                     }
@@ -260,10 +266,13 @@ class MaikPetRepository @Inject constructor(
         }
     }
     
-    suspend fun register(nombre: String, direccion: String, telefono: String, email: String, password: String): Result<Boolean> {
+    suspend fun register(nombre: String, direccion: String, telefono: String, email: String, password: String, edad: Int): Result<Boolean> {
+        if (edad < 18) {
+            return Result.Error("Debes tener al menos 18 años para registrarte")
+        }
         return try {
             _isLoading.value = true
-            val response = api.register(RegisterRequest(nombre, direccion, telefono, email, password))
+            val response = api.register(RegisterRequest(nombre, direccion, telefono, email, password, edad))
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body?.success == true) {

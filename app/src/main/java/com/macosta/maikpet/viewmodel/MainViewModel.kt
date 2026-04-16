@@ -27,7 +27,7 @@ data class MainUiState(
     val toastMessage: String? = null,
     val currentScreen: Screen = Screen.Mapa,
     val selectedMascota: com.macosta.maikpet.data.model.Mascota? = null,
-    val showHome: Boolean = true
+    val showHome: Boolean = false
 )
 
 enum class Screen {
@@ -47,6 +47,7 @@ class MainViewModel @Inject constructor(
     init {
         checkSession()
         observeRepository()
+        _uiState.update { it.copy(currentScreen = Screen.Login, showHome = false) }
     }
     
     private fun observeRepository() {
@@ -209,10 +210,10 @@ class MainViewModel @Inject constructor(
         }
     }
     
-    fun register(nombre: String, direccion: String, telefono: String, email: String, password: String) {
+    fun register(nombre: String, direccion: String, telefono: String, email: String, password: String, edad: Int) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            when (val result = repository.register(nombre, direccion, telefono, email, password)) {
+            when (val result = repository.register(nombre, direccion, telefono, email, password, edad)) {
                 is Result.Success -> {
                     login(email, password)
                 }
@@ -228,8 +229,10 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             repository.logout()
             _uiState.update { it.copy(
+                isLoggedIn = false,
+                currentUser = null,
                 toastMessage = "Sesión cerrada",
-                currentScreen = Screen.Mapa
+                currentScreen = Screen.Login
             )}
         }
     }

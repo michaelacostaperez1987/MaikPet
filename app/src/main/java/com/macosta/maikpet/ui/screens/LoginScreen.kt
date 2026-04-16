@@ -21,7 +21,7 @@ fun LoginScreen(
     isLoading: Boolean,
     error: String?,
     onLogin: (email: String, password: String) -> Unit,
-    onRegister: (nombre: String, direccion: String, telefono: String, email: String, password: String) -> Unit,
+    onRegister: (nombre: String, direccion: String, telefono: String, email: String, password: String, edad: Int) -> Unit,
     onClearError: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -35,6 +35,7 @@ fun LoginScreen(
     var regTelefono by remember { mutableStateOf("") }
     var regEmail by remember { mutableStateOf("") }
     var regPassword by remember { mutableStateOf("") }
+    var regEdad by remember { mutableStateOf("") }
     var acceptTerms by remember { mutableStateOf(false) }
     var showTermsError by remember { mutableStateOf(false) }
     
@@ -216,6 +217,39 @@ fun LoginScreen(
                 )
                 
                 Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = regEdad,
+                    onValueChange = { 
+                        if (it.all { c -> c.isDigit() }) regEdad = it
+                        onClearError()
+                    },
+                    label = { Text("Edad") },
+                    placeholder = { Text("18") },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = textFieldColors(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (regEdad.isNotBlank() && (regEdad.toIntOrNull() ?: 0) < 18) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Error.copy(alpha = 0.2f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "⚠️ Debes tener al menos 18 años para Registrarte",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Error,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+                
+                Spacer(modifier = Modifier.height(12.dp))
                 
                 OutlinedTextField(
                     value = regEmail,
@@ -283,17 +317,22 @@ fun LoginScreen(
                 
                 Button(
                     onClick = {
+                        val edad = regEdad.toIntOrNull() ?: 0
                         if (!acceptTerms) {
                             showTermsError = true
                             return@Button
                         }
-                        onRegister(regNombre, regDireccion, regTelefono, regEmail, regPassword)
+                        if (edad < 18) {
+                            return@Button
+                        }
+                        onRegister(regNombre, regDireccion, regTelefono, regEmail, regPassword, edad)
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
-                    enabled = !isLoading && regNombre.isNotBlank() && regDireccion.isNotBlank() && 
-                            regTelefono.isNotBlank() && regEmail.isNotBlank() && regPassword.isNotBlank() && acceptTerms,
+                    enabled = !isLoading && regNombre.isNotBlank() && regDireccion.isNotBlank() &&
+                            regTelefono.isNotBlank() && regEmail.isNotBlank() && regPassword.isNotBlank() && 
+                            acceptTerms && (regEdad.toIntOrNull() ?: 0) >= 18,
                     colors = ButtonDefaults.buttonColors(containerColor = Primary),
                     shape = RoundedCornerShape(30.dp)
                 ) {
