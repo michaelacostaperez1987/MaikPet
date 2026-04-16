@@ -107,6 +107,16 @@ fun MaikPetApp(
     Box(modifier = Modifier.fillMaxSize()) {
         if (uiState.showHome) {
             HomeScreen(onStartClick = { viewModel.hideHome() })
+        } else if (!uiState.isLoggedIn) {
+            LoginScreen(
+                isLoading = uiState.isLoading,
+                error = uiState.error,
+                onLogin = { email, password -> viewModel.login(email, password) },
+                onRegister = { nombre, dir, tel, email, pass, edad ->
+                    viewModel.register(nombre, dir, tel, email, pass, edad)
+                },
+                onClearError = { viewModel.clearError() }
+            )
         } else {
         Scaffold(
             topBar = {
