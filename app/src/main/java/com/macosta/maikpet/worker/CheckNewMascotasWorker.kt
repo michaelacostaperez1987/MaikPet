@@ -33,8 +33,10 @@ class CheckNewMascotasWorker @AssistedInject constructor(
                 val mascotas = response.body() ?: emptyList()
                 
                 val newestMascota = mascotas.maxByOrNull { it.id }
-                if (newestMascota != null && newestMascota.id > lastId && lastId > 0) {
-                    showNewMascotaNotification(newestMascota)
+                val newCount = newestMascota?.let { it.id - lastId } ?: 0
+
+                if (lastId > 0 && newCount > 0) {
+                    showNewMascotaNotification(newestMascota, newCount)
                 }
                 
                 setLastMascotaId(newestMascota?.id ?: 0)
@@ -58,7 +60,7 @@ class CheckNewMascotasWorker @AssistedInject constructor(
             .apply()
     }
 
-    private fun showNewMascotaNotification(mascota: Mascota) {
+    private fun showNewMascotaNotification(mascota: Mascota?, newCount: Int) {
         val channelId = "maikpet_new_mascotas"
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -83,21 +85,16 @@ class CheckNewMascotasWorker @AssistedInject constructor(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val emoji = if (mascota.tipo == "Perro") "🐕" else "🐱"
-        val title = "$emoji ${mascota.nombre} busca hogar!"
-        val body = "${mascota.tipo} - ${mascota.edadMeses} meses${if (mascota.vacunas == "Si") " - Vacunado" else ""}"
+        val title = if (newCount == 1) "🐾 Nueva mascota disponible!" else "🐾 $newCount nuevas mascotas!"
+        val subtitle = if (mascota != null) "${mascota.tipo} - ${mascota.nombre}" else "Ver en el mapa"
 
         val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
-            .setContentText(body)
+            .setContentText(subtitle)
             .setStyle(NotificationCompat.BigTextStyle()
-                .bigText("$emoji ${mascota.nombre} está buscando un hogar!\n\n" +
-                        "Tipo: ${mascota.tipo}\n" +
-                        "Edad: ${mascota.edadMeses} meses\n" +
-                        "Vacunas: ${mascota.vacunas}\n" +
-                        "Ubicación: ${mascota.direccion}\n\n" +
-                        "Toca para ver en el mapa"))
+                .bigText("Hay $newCount nueva${if (newCount > 1) "s" else ""} mascota${if (newCount > 1) "s" else ""} esperando семей!\n\n" +
+                        "Toca para ver en el mapa de adopciones"))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
@@ -116,10 +113,11 @@ class CheckNewMascotasWorker @AssistedInject constructor(
                 .build()
 
             val workRequest = PeriodicWorkRequestBuilder<CheckNewMascotasWorker>(
-                5, TimeUnit.MINUTES
+                2, TimeUnit.DAYS
             )
                 .setConstraints(constraints)
-                .setInitialDelay(1, TimeUnit.MINUTES)
+                .setInitialDelay(2, TimeUnit.HOURS)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.HOURS)
                 .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
