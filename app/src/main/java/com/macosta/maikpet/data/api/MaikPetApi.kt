@@ -43,7 +43,17 @@ interface MaikPetApi {
     
     @POST("save_device_token.php")
     suspend fun saveDeviceToken(@Body request: TokenRequest): Response<ApiResponse<Nothing>>
+
+    @POST("update_perfil.php")
+    suspend fun updatePerfil(@Body request: UpdatePerfilRequest): Response<ApiResponse<Nothing>>
 }
+
+data class UpdatePerfilRequest(
+    val id: Int,
+    val nombre: String,
+    val direccion: String,
+    val telefono: String
+)
 
 data class TokenRequest(
     val token: String
