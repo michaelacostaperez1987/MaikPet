@@ -37,6 +37,9 @@ class MaikPetRepository @Inject constructor(
         private val USER_KEY = stringPreferencesKey("user_data")
         private val SESSION_TIMESTAMP = longPreferencesKey("session_timestamp")
         private val SESSION_EXPIRY_DAYS = 7
+        private val MASCOTAS_CACHE = stringPreferencesKey("mascotas_cache")
+        private val CACHE_TIMESTAMP = longPreferencesKey("cache_timestamp")
+        private const val CACHE_DURATION_MS = 24 * 60 * 60 * 1000L // 24 horas
     }
 
     private suspend fun saveSessionTimestamp() {
@@ -154,21 +157,63 @@ class MaikPetRepository @Inject constructor(
     }
     
     suspend fun getMascotas(): Result<List<Mascota>> {
+        // Intentar cargar desde cache primero
+        val cachedMascotas = getCachedMascotas()
+        val hasCache = cachedMascotas.isNotEmpty()
+        if (hasCache) {
+            _mascotas.value = cachedMascotas
+        }
+        
         return try {
             _isLoading.value = true
             val response = api.getMascotas()
             if (response.isSuccessful) {
                 val mascotas = response.body() ?: emptyList()
                 _mascotas.value = mascotas
+                cacheMascotas(mascotas)
                 Result.Success(mascotas)
             } else {
-                Result.Error("Error al cargar mascotas")
+                val errorMsg = when (response.code()) {
+                    500 -> "Error del servidor. Intenta más tarde"
+                    401 -> "Sesión expirada"
+                    404 -> "No se encontraron mascotas"
+                    else -> "Error al cargar mascotas"
+                }
+                Result.Error(if (hasCache) "Sin conexión. Mostrando datos guardados." else errorMsg)
             }
+        } catch (e: java.net.UnknownHostException) {
+            Result.Error("Sin conexión. Mostrando datos guardados.")
+        } catch (e: java.net.SocketTimeoutException) {
+            Result.Error("Tiempo de espera agotado. Intenta de nuevo.")
+        } catch (e: retrofit2.HttpException) {
+            Result.Error("Error de conexión (${e.code()})")
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Error de conexión")
+            Result.Error("Error de conexión")
         } finally {
             _isLoading.value = false
         }
+    }
+
+    private suspend fun getCachedMascotas(): List<Mascota> {
+        return try {
+            val timestamp = context.dataStore.data.first()[CACHE_TIMESTAMP] ?: 0L
+            if (System.currentTimeMillis() - timestamp > CACHE_DURATION_MS) {
+                return emptyList() // Cache expirado
+            }
+            val cached = context.dataStore.data.first()[MASCOTAS_CACHE]
+            if (cached != null) {
+                gson.fromJson(cached, object : com.google.gson.reflect.TypeToken<List<Mascota>>() {}.type)
+            } else emptyList()
+        } catch (e: Exception) { emptyList() }
+    }
+
+    private suspend fun cacheMascotas(mascotas: List<Mascota>) {
+        try {
+            context.dataStore.edit { prefs ->
+                prefs[MASCOTAS_CACHE] = gson.toJson(mascotas)
+                prefs[CACHE_TIMESTAMP] = System.currentTimeMillis()
+            }
+        } catch (e: Exception) { Log.e("MaikPetRepo", "Error cacheando", e) }
     }
     
     suspend fun getMisMascotas(): Result<List<Mascota>> {
@@ -311,15 +356,40 @@ class MaikPetRepository @Inject constructor(
                     saveUser(body.usuario)
                     Result.Success(body.usuario)
                 } else {
-                    val msg = body?.error ?: "Error al iniciar sesión"
+                    val msg = when {
+                        body?.error?.contains("email") == true -> "Email o contraseña incorrectos"
+                        body?.error?.contains("password") == true -> "Email o contraseña incorrectos"
+                        else -> body?.error ?: "Credenciales incorrectas"
+                    }
                     _error.value = msg
                     Result.Error(msg)
                 }
             } else {
-                Result.Error("Error del servidor")
+                val errorMsg = when (response.code()) {
+                    500 -> "Error del servidor"
+                    401 -> "Credenciales incorrectas"
+                    else -> "No se pudo iniciar sesión"
+                }
+                Result.Error(errorMsg)
             }
+        } catch (e: java.net.UnknownHostException) {
+            val msg = "Sin conexión a internet"
+            _error.value = msg
+            Result.Error(msg)
+        } catch (e: java.net.SocketTimeoutException) {
+            val msg = "Tiempo de espera agotado"
+            _error.value = msg
+            Result.Error(msg)
+        } catch (e: retrofit2.HttpException) {
+            val msg = when (e.code()) {
+                401 -> "Credenciales incorrectas"
+                500 -> "Error del servidor"
+                else -> "Error de conexión"
+            }
+            _error.value = msg
+            Result.Error(msg)
         } catch (e: Exception) {
-            val msg = e.message ?: "Error de conexión"
+            val msg = "Verifica tu conexión a internet"
             _error.value = msg
             Result.Error(msg)
         } finally {
@@ -342,8 +412,14 @@ class MaikPetRepository @Inject constructor(
     
     suspend fun register(nombre: String, direccion: String, telefono: String, email: String, password: String, edad: Int): Result<Boolean> {
         if (edad < 18) {
-            return Result.Error("Debes tener al menos 18 años para registrarte")
+            return Result.Error("Debes tener al menos 18 años")
         }
+        if (nombre.isBlank()) return Result.Error("Ingresa tu nombre")
+        if (direccion.isBlank()) return Result.Error("Ingresa tu dirección")
+        if (telefono.isBlank()) return Result.Error("Ingresa tu teléfono")
+        if (!isValidEmail(email)) return Result.Error("Email inválido")
+        if (password.length < 4) return Result.Error("Contraseña mínimo 4 caracteres")
+        
         return try {
             _isLoading.value = true
             val response = api.register(RegisterRequest(nombre, direccion, telefono, email, password, edad))
@@ -352,16 +428,31 @@ class MaikPetRepository @Inject constructor(
                 if (body?.success == true) {
                     Result.Success(true)
                 } else {
-                    Result.Error(body?.error ?: "Error al registrarse")
+                    val msg = when {
+                        body?.error?.contains("email") == true -> "Email yaestá registrado"
+                        else -> body?.error ?: "No se pudo completar el registro"
+                    }
+                    Result.Error(msg)
                 }
             } else {
-                Result.Error("Error del servidor")
+                val errorMsg = when (response.code()) {
+                    409 -> "Email ya está registrado"
+                    500 -> "Error del servidor"
+                    else -> "No se pudo completar el registro"
+                }
+                Result.Error(errorMsg)
             }
+        } catch (e: java.net.UnknownHostException) {
+            Result.Error("Sin conexión a internet")
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Error de conexión")
+            Result.Error("Verifica tu conexión")
         } finally {
             _isLoading.value = false
         }
+    }
+
+    private fun isValidEmail(email: String): Boolean {
+        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
     }
     
     suspend fun logout(): Result<Boolean> {
