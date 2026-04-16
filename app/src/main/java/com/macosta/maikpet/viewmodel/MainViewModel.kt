@@ -83,13 +83,9 @@ class MainViewModel @Inject constructor(
             when (val result = repository.checkSession()) {
                 is Result.Success -> {
                     if (result.data != null) {
-                        MaikPetFirebaseService.saveUserEmail(context, result.data.email)
-                        
-                        // Enviar token FCM si existe
-                        val token = MaikPetFirebaseService.getToken(context)
-                        if (token != null) {
-                            repository.sendDeviceToken(token)
-                        }
+                        val fcmToken = MaikPetFirebaseService.getToken(context)
+                        MaikPetFirebaseService.saveUserId(context, result.data.id, fcmToken)
+                        if (fcmToken != null) repository.sendDeviceToken(fcmToken)
                         
                         loadMascotas()
                         loadMisMascotas()
@@ -207,13 +203,9 @@ class MainViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, error = null) }
             when (val result = repository.login(email, password)) {
                 is Result.Success -> {
-                    MaikPetFirebaseService.saveUserEmail(context, result.data.email)
-                    
-                    // Enviar token FCM si existe
-                    val token = MaikPetFirebaseService.getToken(context)
-                    if (token != null) {
-                        repository.sendDeviceToken(token)
-                    }
+                    val fcmToken = MaikPetFirebaseService.getToken(context)
+                    MaikPetFirebaseService.saveUserId(context, result.data.id, fcmToken)
+                    if (fcmToken != null) repository.sendDeviceToken(fcmToken)
                     
                     _uiState.update { it.copy(
                         toastMessage = "Bienvenido ${result.data.nombre}",

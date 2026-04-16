@@ -56,5 +56,6 @@ data class UpdatePerfilRequest(
 )
 
 data class TokenRequest(
-    val token: String
+    val token: String,
+    val user_id: Int
 )

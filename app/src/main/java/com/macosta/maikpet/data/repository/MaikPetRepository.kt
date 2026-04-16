@@ -328,9 +328,10 @@ class MaikPetRepository @Inject constructor(
     }
     
     suspend fun sendDeviceToken(token: String): Boolean {
+        val userId = currentUser.value?.id ?: return false
         return try {
-            Log.d("MaikPetRepo", "Enviando token: $token")
-            val response = api.saveDeviceToken(TokenRequest(token))
+            Log.d("MaikPetRepo", "Enviando token para user: $userId")
+            val response = api.saveDeviceToken(TokenRequest(token, userId))
             Log.d("MaikPetRepo", "Token response: ${response.code()}")
             response.isSuccessful
         } catch (e: Exception) {

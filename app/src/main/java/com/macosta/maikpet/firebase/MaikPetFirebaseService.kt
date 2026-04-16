@@ -56,12 +56,12 @@ class MaikPetFirebaseService : FirebaseMessagingService() {
 
     private fun sendTokenToServer(token: String) {
         val prefs = getSharedPreferences("maikpet_prefs", Context.MODE_PRIVATE)
-        val email = prefs.getString("user_email", null)
+        val userId = prefs.getInt("user_id", 0)
         
-        if (email != null) {
+        if (userId > 0) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val response = api.saveDeviceToken(TokenRequest(token))
+                    val response = api.saveDeviceToken(TokenRequest(token, userId))
                     Log.d("FCM", "Token enviado al servidor: ${response.isSuccessful}")
                 } catch (e: Exception) {
                     Log.e("FCM", "Error al enviar token: ${e.message}")
@@ -117,31 +117,13 @@ class MaikPetFirebaseService : FirebaseMessagingService() {
                 .getString("fcm_token", null)
         }
         
-        fun saveUserEmail(context: Context, email: String) {
+        fun saveUserId(context: Context, userId: Int, token: String?) {
             context.getSharedPreferences("maikpet_prefs", Context.MODE_PRIVATE)
                 .edit()
-                .putString("user_email", email)
+                .putInt("user_id", userId)
                 .apply()
             
-            // Enviar token si existe
-            val token = getToken(context)
-            if (token != null) {
-                Log.d("FCM", "Token existente detectado, guardando...")
-                saveTokenToServerSync(context, token)
-            }
-        }
-        
-        private fun saveTokenToServerSync(context: Context, token: String) {
-            val prefs = context.getSharedPreferences("maikpet_prefs", Context.MODE_PRIVATE)
-            val email = prefs.getString("user_email", null)
-            
-            if (email != null) {
-                val handler = android.os.Handler(android.os.Looper.getMainLooper())
-                handler.post {
-                    // This won't work directly, so we'll use a different approach
-                    Log.d("FCM", "Token ready for send, user is logged in")
-                }
-            }
+            Log.d("FCM", "UserID guardado: $userId, token disponible: ${token != null}")
         }
     }
 }
