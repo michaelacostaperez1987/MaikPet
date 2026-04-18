@@ -3,6 +3,9 @@ package com.macosta.maikpet.viewmodel
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import com.macosta.maikpet.data.model.MascotaRequest
 import com.macosta.maikpet.data.model.Usuario
 import com.macosta.maikpet.data.repository.GeocodingRepository
@@ -31,7 +34,7 @@ data class MainUiState(
 )
 
 enum class Screen {
-    Home, Mapa, Adopcion, MisMascotas, DarAdopcion, Login, AcercaDe, Terminos, EditarMascota, EditarPerfil, Legal
+    Home, Mapa, Adopcion, MisMascotas, DarAdopcion, AcercaDe, Terminos, EditarMascota, EditarPerfil
 }
 
 @HiltViewModel
@@ -41,13 +44,13 @@ class MainViewModel @Inject constructor(
     @ApplicationContext private val context: Context
 ) : ViewModel() {
     
+    private val auth = Firebase.auth
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
     
     init {
         checkSession()
         observeRepository()
-        _uiState.update { it.copy(currentScreen = Screen.Login, showHome = false) }
     }
     
     private fun observeRepository() {
@@ -81,22 +84,24 @@ class MainViewModel @Inject constructor(
     private fun checkSession() {
         viewModelScope.launch {
             when (val result = repository.checkSession()) {
-                is Result.Success -> {
-                    if (result.data != null) {
+                is com.macosta.maikpet.data.repository.Result.Success -> {
+                    val user = result.data
+                    if (user != null) {
+                        _uiState.update { it.copy(currentUser = user, isLoggedIn = true) }
+                        // Enviar token FCM
                         val fcmToken = MaikPetFirebaseService.getToken(context)
-                        MaikPetFirebaseService.saveUserId(context, result.data.id, fcmToken)
                         if (fcmToken != null) repository.sendDeviceToken(fcmToken)
-                        
-                        loadMascotas()
                         loadMisMascotas()
                     } else {
-                        loadMascotas()
+                        _uiState.update { it.copy(isLoggedIn = false) }
                     }
-                }
-                is Result.Error -> {
                     loadMascotas()
                 }
-                is Result.Loading -> {}
+                is com.macosta.maikpet.data.repository.Result.Error -> {
+                    _uiState.update { it.copy(isLoggedIn = false) }
+                    loadMascotas()
+                }
+                is com.macosta.maikpet.data.repository.Result.Loading -> {}
             }
         }
     }
@@ -199,39 +204,43 @@ class MainViewModel @Inject constructor(
     }
     
     fun login(email: String, password: String) {
+        if (email.isBlank() || password.isBlank()) {
+            _uiState.update { it.copy(error = "Complete todos los campos") }
+            return
+        }
+        
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
+            
             when (val result = repository.login(email, password)) {
                 is Result.Success -> {
-                    val fcmToken = MaikPetFirebaseService.getToken(context)
-                    MaikPetFirebaseService.saveUserId(context, result.data.id, fcmToken)
-                    if (fcmToken != null) repository.sendDeviceToken(fcmToken)
-                    
-                    _uiState.update { it.copy(
-                        toastMessage = "Bienvenido ${result.data.nombre}",
-                        currentScreen = Screen.Mapa
-                    )}
-                    loadMascotas()
-                    loadMisMascotas()
+                    _uiState.update { it.copy(isLoading = false, currentUser = result.data) }
                 }
                 is Result.Error -> {
-                    _uiState.update { it.copy(error = result.message) }
+                    _uiState.update { it.copy(isLoading = false, error = result.message) }
                 }
                 is Result.Loading -> {}
             }
-            _uiState.update { it.copy(isLoading = false) }
         }
     }
     
     fun register(nombre: String, direccion: String, telefono: String, email: String, password: String, edad: Int) {
+        if (nombre.isBlank() || email.isBlank() || password.isBlank()) {
+            _uiState.update { it.copy(error = "Complete los campos obligatorios") }
+            return
+        }
+        
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
+            
             when (val result = repository.register(nombre, direccion, telefono, email, password, edad)) {
                 is Result.Success -> {
+                    _uiState.update { it.copy(isLoading = false) }
+                    // Auto login después de registro
                     login(email, password)
                 }
                 is Result.Error -> {
-                    _uiState.update { it.copy(error = result.message, isLoading = false) }
+                    _uiState.update { it.copy(isLoading = false, error = result.message) }
                 }
                 is Result.Loading -> {}
             }
@@ -241,12 +250,7 @@ class MainViewModel @Inject constructor(
     fun logout() {
         viewModelScope.launch {
             repository.logout()
-            _uiState.update { it.copy(
-                isLoggedIn = false,
-                currentUser = null,
-                toastMessage = "Sesión cerrada",
-                currentScreen = Screen.Login
-            )}
+            _uiState.update { it.copy(currentUser = null, isLoggedIn = false) }
         }
     }
     

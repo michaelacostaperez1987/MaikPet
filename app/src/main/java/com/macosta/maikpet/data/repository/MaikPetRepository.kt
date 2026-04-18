@@ -396,6 +396,29 @@ class MaikPetRepository @Inject constructor(
             _isLoading.value = false
         }
     }
+
+    suspend fun loginWithGoogle(email: String, googleToken: String): Result<Usuario> {
+        return try {
+            _isLoading.value = true
+            val response = api.loginWithGoogle(GoogleLoginRequest(email, googleToken))
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body?.success == true && body.usuario != null) {
+                    _currentUser.value = body.usuario
+                    saveUser(body.usuario)
+                    Result.Success(body.usuario)
+                } else {
+                    Result.Error(body?.error ?: "Error al iniciar con Google")
+                }
+            } else {
+                Result.Error("Error del servidor")
+            }
+        } catch (e: Exception) {
+            Result.Error("Error de conexión")
+        } finally {
+            _isLoading.value = false
+        }
+    }
     
     suspend fun sendDeviceToken(token: String): Boolean {
         val userId = currentUser.value?.id ?: return false
@@ -411,12 +434,7 @@ class MaikPetRepository @Inject constructor(
     }
     
     suspend fun register(nombre: String, direccion: String, telefono: String, email: String, password: String, edad: Int): Result<Boolean> {
-        if (edad < 18) {
-            return Result.Error("Debes tener al menos 18 años")
-        }
         if (nombre.isBlank()) return Result.Error("Ingresa tu nombre")
-        if (direccion.isBlank()) return Result.Error("Ingresa tu dirección")
-        if (telefono.isBlank()) return Result.Error("Ingresa tu teléfono")
         if (!isValidEmail(email)) return Result.Error("Email inválido")
         if (password.length < 4) return Result.Error("Contraseña mínimo 4 caracteres")
         
