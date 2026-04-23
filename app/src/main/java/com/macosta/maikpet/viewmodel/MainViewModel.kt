@@ -3,9 +3,6 @@ package com.macosta.maikpet.viewmodel
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
 import com.macosta.maikpet.data.model.MascotaRequest
 import com.macosta.maikpet.data.model.Usuario
 import com.macosta.maikpet.data.repository.GeocodingRepository
@@ -19,7 +16,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class MainUiState(
-    val isLoggedIn: Boolean = false,
+    val isLoggedIn: Boolean = true,
     val currentUser: Usuario? = null,
     val mascotas: List<com.macosta.maikpet.data.model.Mascota> = emptyList(),
     val misMascotas: List<com.macosta.maikpet.data.model.Mascota> = emptyList(),
@@ -34,7 +31,7 @@ data class MainUiState(
 )
 
 enum class Screen {
-    Home, Mapa, Adopcion, MisMascotas, DarAdopcion, AcercaDe, Terminos, EditarMascota, EditarPerfil
+    Home, Mapa, Adopcion, MisMascotas, DarAdopcion, AcercaDe, Terminos, EditarMascota, EditarPerfil, Login, Legal
 }
 
 @HiltViewModel
@@ -44,7 +41,6 @@ class MainViewModel @Inject constructor(
     @ApplicationContext private val context: Context
 ) : ViewModel() {
     
-    private val auth = Firebase.auth
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
     

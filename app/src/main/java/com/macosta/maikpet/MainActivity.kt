@@ -126,8 +126,9 @@ fun MaikPetApp(viewModel: MainViewModel) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Surface)
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .background(SurfaceGlass)
+                    .padding(horizontal = 16.dp, vertical = 16.dp)
+                    .statusBarsPadding()
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically
@@ -143,7 +144,7 @@ fun MaikPetApp(viewModel: MainViewModel) {
                     Text(
                         text = "MaikPet - Adopciones",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = FontWeight.SemiBold,
                         color = OnBackground
                     )
                 }
@@ -151,69 +152,82 @@ fun MaikPetApp(viewModel: MainViewModel) {
         },
         containerColor = Background
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .background(Background)
+                .navigationBarsPadding()
         ) {
-            Box(modifier = Modifier.weight(1f)) {
-                when (uiState.currentScreen) {
-                    Screen.Home -> HomeScreen(
-                        onStartClick = { viewModel.navigateTo(Screen.Mapa) }
-                    )
-                    Screen.Mapa -> MapaScreen(
-                        mascotas = uiState.mascotas,
-                        onLocationUpdate = { },
-                        onRefresh = { viewModel.loadMascotas() },
-                        isLoading = uiState.isLoading
-                    )
-                    Screen.Adopcion -> AdopcionScreen(
-                        mascotas = uiState.mascotas,
-                        isLoading = uiState.isLoading
-                    )
-                    Screen.MisMascotas -> MisMascotasScreen(
-                        mascotas = uiState.misMascotas,
-                        isLoggedIn = true,
-                        isLoading = uiState.isLoading,
-                        onDeleteMascota = { id -> viewModel.deleteMascota(id) },
-                        onEditMascota = { mascota -> viewModel.editMascota(mascota) }
-                    )
-                    Screen.DarAdopcion -> DarAdopcionScreen(
-                        isLoggedIn = true,
-                        currentUserName = currentUser?.nombre,
+            when (uiState.currentScreen) {
+                Screen.Home -> HomeScreen(
+                    onStartClick = { viewModel.navigateTo(Screen.Mapa) }
+                )
+                Screen.Mapa -> MapaScreen(
+                    mascotas = uiState.mascotas,
+                    onLocationUpdate = { },
+                    onRefresh = { viewModel.loadMascotas() },
+                    isLoading = uiState.isLoading
+                )
+                Screen.Adopcion -> AdopcionScreen(
+                    mascotas = uiState.mascotas,
+                    isLoading = uiState.isLoading
+                )
+                Screen.MisMascotas -> MisMascotasScreen(
+                    mascotas = uiState.misMascotas,
+                    isLoggedIn = true,
+                    isLoading = uiState.isLoading,
+                    onDeleteMascota = { id -> viewModel.deleteMascota(id) },
+                    onEditMascota = { mascota -> viewModel.editMascota(mascota) }
+                )
+                Screen.DarAdopcion -> DarAdopcionScreen(
+                    isLoggedIn = true,
+                    currentUserName = currentUser?.nombre,
+                    isLoading = uiState.isLoading,
+                    isGeocoding = uiState.isGeocoding,
+                    geocodingMessage = uiState.geocodingMessage,
+                    onSubmit = { nombre, tipo, edad, vacunas, direccion, descripcion, imagen ->
+                        viewModel.addMascota(nombre, tipo, edad, vacunas, direccion, descripcion, imagen)
+                    }
+                )
+                Screen.AcercaDe -> AcercaDeScreen()
+                Screen.Terminos -> TerminosScreen(
+                    onBack = { viewModel.navigateTo(Screen.Mapa) }
+                )
+                Screen.EditarMascota -> uiState.selectedMascota?.let { mascota ->
+                    EditarMascotaScreen(
+                        mascota = mascota,
                         isLoading = uiState.isLoading,
                         isGeocoding = uiState.isGeocoding,
                         geocodingMessage = uiState.geocodingMessage,
-                        onSubmit = { nombre, tipo, edad, vacunas, direccion, descripcion, imagen ->
-                            viewModel.addMascota(nombre, tipo, edad, vacunas, direccion, descripcion, imagen)
-                        }
-                    )
-                    Screen.AcercaDe -> AcercaDeScreen()
-                    Screen.Terminos -> TerminosScreen(
-                        onBack = { viewModel.navigateTo(Screen.Mapa) }
-                    )
-                    Screen.EditarMascota -> uiState.selectedMascota?.let { mascota ->
-                        EditarMascotaScreen(
-                            mascota = mascota,
-                            isLoading = uiState.isLoading,
-                            isGeocoding = uiState.isGeocoding,
-                            geocodingMessage = uiState.geocodingMessage,
-                            onSave = { nombre, tipo, edad, visas, direccion, descripcion, imagen ->
-                                viewModel.updateMascota(nombre, tipo, edad, visas, direccion, descripcion, imagen)
-                            },
-                            onBack = { viewModel.navigateTo(Screen.MisMascotas) }
-                        )
-                    }
-                    Screen.EditarPerfil -> EditarPerfilScreen(
-                        currentUser = uiState.currentUser,
-                        isLoading = uiState.isLoading,
-                        onSave = { nombre, direccion, telefono ->
-                            viewModel.updatePerfil(nombre, direccion, telefono)
+                        onSave = { nombre, tipo, edad, visas, direccion, descripcion, imagen ->
+                            viewModel.updateMascota(nombre, tipo, edad, visas, direccion, descripcion, imagen)
                         },
-                        onBack = { viewModel.navigateTo(Screen.Mapa) }
+                        onBack = { viewModel.navigateTo(Screen.MisMascotas) }
                     )
                 }
+                Screen.EditarPerfil -> EditarPerfilScreen(
+                    currentUser = uiState.currentUser,
+                    isLoading = uiState.isLoading,
+                    onSave = { nombre, direccion, telefono ->
+                        viewModel.updatePerfil(nombre, direccion, telefono)
+                    },
+                    onBack = { viewModel.navigateTo(Screen.Mapa) }
+                )
+                Screen.Login -> LoginScreen(
+                    isLoading = uiState.isLoading,
+                    error = uiState.error,
+                    onLogin = { email, password -> viewModel.login(email, password) },
+                    onRegister = { nombre, dir, tel, email, pass, edad ->
+                        viewModel.register(nombre, dir, tel, email, pass, edad)
+                    },
+                    onViewPrivacy = { viewModel.navigateTo(Screen.Legal) },
+                    onViewTerms = { viewModel.navigateTo(Screen.Legal) },
+                    onClearError = { viewModel.clearError() }
+                )
+                Screen.Legal -> LegalScreen(
+                    onBack = { viewModel.navigateTo(Screen.Login) }
+                )
             }
         }
     }

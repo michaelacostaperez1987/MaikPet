@@ -396,29 +396,6 @@ class MaikPetRepository @Inject constructor(
             _isLoading.value = false
         }
     }
-
-    suspend fun loginWithGoogle(email: String, googleToken: String): Result<Usuario> {
-        return try {
-            _isLoading.value = true
-            val response = api.loginWithGoogle(GoogleLoginRequest(email, googleToken))
-            if (response.isSuccessful) {
-                val body = response.body()
-                if (body?.success == true && body.usuario != null) {
-                    _currentUser.value = body.usuario
-                    saveUser(body.usuario)
-                    Result.Success(body.usuario)
-                } else {
-                    Result.Error(body?.error ?: "Error al iniciar con Google")
-                }
-            } else {
-                Result.Error("Error del servidor")
-            }
-        } catch (e: Exception) {
-            Result.Error("Error de conexión")
-        } finally {
-            _isLoading.value = false
-        }
-    }
     
     suspend fun sendDeviceToken(token: String): Boolean {
         val userId = currentUser.value?.id ?: return false
