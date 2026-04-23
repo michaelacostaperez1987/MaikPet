@@ -89,12 +89,22 @@ class MainViewModel @Inject constructor(
                         if (fcmToken != null) repository.sendDeviceToken(fcmToken)
                         loadMisMascotas()
                     } else {
-                        _uiState.update { it.copy(isLoggedIn = false) }
+                        // No hay usuario, redirigir a login
+                        _uiState.update { it.copy(
+                            currentUser = null, 
+                            isLoggedIn = false,
+                            currentScreen = Screen.Login
+                        ) }
                     }
                     loadMascotas()
                 }
                 is com.macosta.maikpet.data.repository.Result.Error -> {
-                    _uiState.update { it.copy(isLoggedIn = false) }
+                    // Error, redirigir a login
+                    _uiState.update { it.copy(
+                        currentUser = null, 
+                        isLoggedIn = false,
+                        currentScreen = Screen.Login
+                    ) }
                     loadMascotas()
                 }
                 is com.macosta.maikpet.data.repository.Result.Loading -> {}
@@ -115,11 +125,20 @@ class MainViewModel @Inject constructor(
     }
     
     fun navigateTo(screen: Screen) {
-        _uiState.update { it.copy(currentScreen = screen, selectedMascota = null) }
-        when (screen) {
-            Screen.Mapa, Screen.Adopcion -> loadMascotas()
-            Screen.MisMascotas -> loadMisMascotas()
-            else -> {}
+        // Verificar si la pantalla requiere autenticación
+        val requiresAuth = screen == Screen.MisMascotas || screen == Screen.DarAdopcion || 
+                          screen == Screen.EditarMascota || screen == Screen.EditarPerfil
+        
+        if (requiresAuth && !_uiState.value.isLoggedIn) {
+            // Redirigir a login si no está autenticado
+            _uiState.update { it.copy(currentScreen = Screen.Login) }
+        } else {
+            _uiState.update { it.copy(currentScreen = screen, selectedMascota = null) }
+            when (screen) {
+                Screen.Mapa, Screen.Adopcion -> loadMascotas()
+                Screen.MisMascotas -> loadMisMascotas()
+                else -> {}
+            }
         }
     }
     
@@ -246,7 +265,11 @@ class MainViewModel @Inject constructor(
     fun logout() {
         viewModelScope.launch {
             repository.logout()
-            _uiState.update { it.copy(currentUser = null, isLoggedIn = false) }
+            _uiState.update { it.copy(
+                currentUser = null, 
+                isLoggedIn = false,
+                currentScreen = Screen.Login  // Redirigir a pantalla de login
+            ) }
         }
     }
     

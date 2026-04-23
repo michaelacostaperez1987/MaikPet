@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Process
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -177,23 +178,49 @@ fun MaikPetApp(viewModel: MainViewModel) {
                     mascotas = uiState.mascotas,
                     isLoading = uiState.isLoading
                 )
-                Screen.MisMascotas -> MisMascotasScreen(
-                    mascotas = uiState.misMascotas,
-                    isLoggedIn = true,
-                    isLoading = uiState.isLoading,
-                    onDeleteMascota = { id -> viewModel.deleteMascota(id) },
-                    onEditMascota = { mascota -> viewModel.editMascota(mascota) }
-                )
-                Screen.DarAdopcion -> DarAdopcionScreen(
-                    isLoggedIn = true,
-                    currentUserName = currentUser?.nombre,
-                    isLoading = uiState.isLoading,
-                    isGeocoding = uiState.isGeocoding,
-                    geocodingMessage = uiState.geocodingMessage,
-                    onSubmit = { nombre, tipo, edad, vacunas, direccion, descripcion, imagen ->
-                        viewModel.addMascota(nombre, tipo, edad, vacunas, direccion, descripcion, imagen)
+                Screen.MisMascotas -> {
+                    if (uiState.isLoggedIn) {
+                        MisMascotasScreen(
+                            mascotas = uiState.misMascotas,
+                            isLoggedIn = uiState.isLoggedIn,
+                            isLoading = uiState.isLoading,
+                            onDeleteMascota = { id -> viewModel.deleteMascota(id) },
+                            onEditMascota = { mascota -> viewModel.editMascota(mascota) }
+                        )
+                    } else {
+                        // Redirigir a login si no está autenticado
+                        LaunchedEffect(Unit) {
+                            viewModel.navigateTo(Screen.Login)
+                        }
+                        // Mostrar pantalla de carga o mensaje
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Redirigiendo a login...")
+                        }
                     }
-                )
+                }
+                Screen.DarAdopcion -> {
+                    if (uiState.isLoggedIn) {
+                        DarAdopcionScreen(
+                            isLoggedIn = uiState.isLoggedIn,
+                            currentUserName = currentUser?.nombre,
+                            isLoading = uiState.isLoading,
+                            isGeocoding = uiState.isGeocoding,
+                            geocodingMessage = uiState.geocodingMessage,
+                            onSubmit = { nombre, tipo, edad, vacunas, direccion, descripcion, imagen ->
+                                viewModel.addMascota(nombre, tipo, edad, vacunas, direccion, descripcion, imagen)
+                            }
+                        )
+                    } else {
+                        // Redirigir a login si no está autenticado
+                        LaunchedEffect(Unit) {
+                            viewModel.navigateTo(Screen.Login)
+                        }
+                        // Mostrar pantalla de carga o mensaje
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Redirigiendo a login...")
+                        }
+                    }
+                }
                 Screen.AcercaDe -> AcercaDeScreen()
                 Screen.Terminos -> TerminosScreen(
                     onBack = { viewModel.navigateTo(Screen.Mapa) }
@@ -402,13 +429,13 @@ fun MaikPetApp(viewModel: MainViewModel) {
                                     showExitDialog = false
                                     // 1. Cerrar sesión primero
                                     viewModel.logout()
-                                    // 2. Cerrar completamente la aplicación después de un breve delay
-                                    CoroutineScope(Dispatchers.Main).launch {
-                                        delay(300) // Pequeño delay para asegurar que se procese el logout
-                                        // 3. Cerrar completamente la aplicación
-                                        (context as? ComponentActivity)?.finishAffinity()
-                                        // Opcional: También forzar cierre del proceso
-                                        // android.os.Process.killProcess(android.os.Process.myPid())
+                                    // 2. Cerrar completamente la aplicación
+                                    val activity = context as? ComponentActivity
+                                    activity?.runOnUiThread {
+                                        // Método más efectivo para cerrar la app
+                                        activity.finishAffinity()
+                                        // Forzar cierre del proceso para asegurar
+                                        android.os.Process.killProcess(android.os.Process.myPid())
                                     }
                                 }
                             ) {
