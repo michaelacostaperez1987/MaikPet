@@ -68,12 +68,9 @@ class MainActivity : ComponentActivity() {
                 // Verificar autenticación - si no hay usuario logueado, ir a login
                 LaunchedEffect(uiState.isLoggedIn, uiState.currentUser) {
                     if (!uiState.isLoggedIn && uiState.currentUser == null) {
-                        // Solo navegar a LoginActivity si no estamos ya en LoginActivity
-                        // y si no acabamos de venir de LoginActivity
-                        if (this@MainActivity !is LoginActivity) {
-                            startActivity(Intent(this@MainActivity, LoginActivity::class.java))
-                            finish()
-                        }
+                        // Navegar a LoginActivity
+                        startActivity(Intent(this@MainActivity, LoginActivity::class.java))
+                        finish()
                     }
                 }
                 
