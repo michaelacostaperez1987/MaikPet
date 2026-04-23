@@ -1,6 +1,15 @@
 <?php
 require_once 'config.php';
 
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, X-Session-Id, X-Auth-Token, X-User-Id');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
 $conn = getConnection();
 
 $sql = "SELECT m.id, m.nombre, m.tipo, m.edad_meses, m.vacunas, m.descripcion, m.direccion, m.lat, m.lng, m.fecha_registro, m.imagen,
@@ -38,5 +47,5 @@ while ($row = $result->fetch_assoc()) {
     ];
 }
 
-jsonResponse($mascotas);
+jsonResponse(['success' => true, 'mascotas' => $mascotas]);
 ?>
