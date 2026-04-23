@@ -6,7 +6,12 @@ header('Content-Type: application/json; charset=utf-8');
 require_once 'config.php';
 
 if (!isLoggedIn()) {
-    echo json_encode(['success' => false, 'error' => 'No autorizado']);
+    error_log('add_mascota: No autorizado. Session ID: ' . session_id() . ', SESSION: ' . json_encode($_SESSION));
+    echo json_encode(['success' => false, 'error' => 'No autorizado', 'debug' => [
+        'session_id' => session_id(),
+        'session_user_id' => $_SESSION['usuario_id'] ?? null,
+        'headers_received' => function_exists('getallheaders') ? getallheaders() : []
+    ]]);
     exit;
 }
 

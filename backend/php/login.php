@@ -45,6 +45,8 @@ jsonResponse([
         'email' => $usuario['email'],
         'telefono' => $usuario['telefono'],
         'direccion' => $usuario['direccion']
-    ]
+    ],
+    'sessionId' => session_id(),
+    'token' => bin2hex(random_bytes(16))
 ]);
 ?>

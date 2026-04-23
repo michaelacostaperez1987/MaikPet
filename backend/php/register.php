@@ -47,7 +47,24 @@ $stmt = $conn->prepare("INSERT INTO usuarios (nombre, direccion, telefono, email
 $stmt->bind_param("sssss", $nombre, $direccion, $telefono, $email, $hashedPassword);
 
 if ($stmt->execute()) {
-    jsonResponse(['success' => true, 'message' => 'Usuario registrado correctamente']);
+    $usuario_id = $stmt->insert_id;
+    $_SESSION['usuario_id'] = $usuario_id;
+    $_SESSION['usuario_nombre'] = $nombre;
+    $_SESSION['usuario_email'] = $email;
+    
+    jsonResponse([
+        'success' => true,
+        'message' => 'Usuario registrado correctamente',
+        'usuario' => [
+            'id' => $usuario_id,
+            'nombre' => $nombre,
+            'email' => $email,
+            'telefono' => $telefono,
+            'direccion' => $direccion
+        ],
+        'sessionId' => session_id(),
+        'token' => bin2hex(random_bytes(16))
+    ]);
 } else {
     jsonResponse(['success' => false, 'error' => 'Error al registrar usuario']);
 }

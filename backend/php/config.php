@@ -21,7 +21,27 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.cookie_httponly', 1);
     ini_set('session.use_only_cookies', 1);
     ini_set('session.cookie_secure', 0);
+    // Si se proporciona X-Session-Id en el header, usarlo para recuperar sesión existente
+    $sessionId = null;
+    if (function_exists('getallheaders')) {
+        $headers = getallheaders();
+        if (isset($headers['X-Session-Id']) && !empty($headers['X-Session-Id'])) {
+            $sessionId = $headers['X-Session-Id'];
+        }
+    } else {
+        // Alternativa para servidores sin getallheaders()
+        $headerKey = 'HTTP_X_SESSION_ID';
+        if (isset($_SERVER[$headerKey]) && !empty($_SERVER[$headerKey])) {
+            $sessionId = $_SERVER[$headerKey];
+        }
+    }
+    if ($sessionId) {
+        session_id($sessionId);
+    }
     session_start();
+    
+    // Debug: log session info
+    error_log('PHP Session started: id=' . session_id() . ', user_id=' . ($_SESSION['usuario_id'] ?? 'none'));
 }
 
 /**

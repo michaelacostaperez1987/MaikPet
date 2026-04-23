@@ -76,7 +76,9 @@ data class ApiResponse<T>(
     val id: Int? = null,
     val usuario: Usuario? = null,
     val mascotas: List<Mascota>? = null,
-    val logueado: Boolean = false
+    val logueado: Boolean = false,
+    val sessionId: String? = null,
+    val token: String? = null
 )
 
 data class SessionResponse(

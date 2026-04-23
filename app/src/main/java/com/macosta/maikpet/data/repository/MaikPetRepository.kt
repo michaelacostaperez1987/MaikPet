@@ -40,6 +40,37 @@ class MaikPetRepository @Inject constructor(
         private val MASCOTAS_CACHE = stringPreferencesKey("mascotas_cache")
         private val CACHE_TIMESTAMP = longPreferencesKey("cache_timestamp")
         private const val CACHE_DURATION_MS = 24 * 60 * 60 * 1000L // 24 horas
+        private const val SESSION_PREFS = "session_prefs"
+        private const val SESSION_ID_KEY = "session_id"
+        private const val AUTH_TOKEN_KEY = "auth_token"
+        private const val CACHED_USER_ID = "cached_user_id"
+    }
+
+    private val sessionPrefs = context.getSharedPreferences(SESSION_PREFS, Context.MODE_PRIVATE)
+
+    private fun saveSessionId(sessionId: String) {
+        sessionPrefs.edit().putString(SESSION_ID_KEY, sessionId).apply()
+    }
+
+    private fun getSessionId(): String? {
+        return sessionPrefs.getString(SESSION_ID_KEY, null)
+    }
+
+    private fun saveAuthToken(token: String) {
+        sessionPrefs.edit().putString(AUTH_TOKEN_KEY, token).apply()
+    }
+
+    private fun getAuthToken(): String? {
+        return sessionPrefs.getString(AUTH_TOKEN_KEY, null)
+    }
+
+    private fun saveCachedUserId(userId: Int) {
+        sessionPrefs.edit().putInt(CACHED_USER_ID, userId).apply()
+        Log.d("MaikPetRepo", "Saved userId: $userId")
+    }
+
+    private fun getCachedUserId(): Int {
+        return sessionPrefs.getInt(CACHED_USER_ID, -1)
     }
 
     private suspend fun saveSessionTimestamp() {
@@ -354,6 +385,17 @@ class MaikPetRepository @Inject constructor(
                 if (body?.success == true && body.usuario != null) {
                     _currentUser.value = body.usuario
                     saveUser(body.usuario)
+                    // Guardar sesión
+                    body.sessionId?.let { 
+                        saveSessionId(it)
+                        Log.d("MaikPetRepo", "Saved sessionId: $it")
+                    }
+                    body.token?.let { 
+                        saveAuthToken(it)
+                        Log.d("MaikPetRepo", "Saved token: $it")
+                    }
+                    saveCachedUserId(body.usuario.id)
+                    Log.d("MaikPetRepo", "Saved userId: ${body.usuario.id}")
                     Result.Success(body.usuario)
                 } else {
                     val msg = when {
@@ -410,18 +452,24 @@ class MaikPetRepository @Inject constructor(
         }
     }
     
-    suspend fun register(nombre: String, direccion: String, telefono: String, email: String, password: String, edad: Int): Result<Boolean> {
+suspend fun register(nombre: String, direccion: String, telefono: String, email: String, password: String, edad: Int): Result<Usuario> {
         if (nombre.isBlank()) return Result.Error("Ingresa tu nombre")
-        if (!isValidEmail(email)) return Result.Error("Email inválido")
-        if (password.length < 4) return Result.Error("Contraseña mínimo 4 caracteres")
+        if (!isValidEmail(email)) return Result.Error("Email invalido")
+        if (password.length < 4) return Result.Error("Contrasena minimo 4 caracteres")
         
         return try {
             _isLoading.value = true
             val response = api.register(RegisterRequest(nombre, direccion, telefono, email, password, edad))
             if (response.isSuccessful) {
                 val body = response.body()
-                if (body?.success == true) {
-                    Result.Success(true)
+                if (body?.success == true && body.usuario != null) {
+                    _currentUser.value = body.usuario
+                    saveUser(body.usuario)
+                    // Guardar sesión
+                    body.sessionId?.let { saveSessionId(it) }
+                    body.token?.let { saveAuthToken(it) }
+                    saveCachedUserId(body.usuario.id)
+                    Result.Success(body.usuario)
                 } else {
                     val msg = when {
                         body?.error?.contains("email") == true -> "Email yaestá registrado"
