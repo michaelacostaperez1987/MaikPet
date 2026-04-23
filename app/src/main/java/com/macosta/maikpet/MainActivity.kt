@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -381,7 +382,16 @@ fun MaikPetApp(viewModel: MainViewModel) {
                     selected = false,
                     onClick = {
                         drawerOpen = false
-                        (context as? ComponentActivity)?.finish()
+                        // 1. Cerrar sesión primero
+                        viewModel.logout()
+                        // 2. Dar tiempo para que se procese el logout (opcional)
+                        LaunchedEffect(Unit) {
+                            delay(300) // Pequeño delay para asegurar que se procese el logout
+                            // 3. Cerrar completamente la aplicación
+                            (context as? ComponentActivity)?.finishAffinity()
+                            // Opcional: También forzar cierre del proceso
+                            // android.os.Process.killProcess(android.os.Process.myPid())
+                        }
                     }
                 )
             }

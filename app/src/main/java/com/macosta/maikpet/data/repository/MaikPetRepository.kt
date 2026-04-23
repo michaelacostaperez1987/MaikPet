@@ -73,6 +73,15 @@ class MaikPetRepository @Inject constructor(
         return sessionPrefs.getInt(CACHED_USER_ID, -1)
     }
 
+    private fun clearAuthHeaders() {
+        sessionPrefs.edit()
+            .remove(SESSION_ID_KEY)
+            .remove(AUTH_TOKEN_KEY)
+            .remove(CACHED_USER_ID)
+            .apply()
+        Log.d("MaikPetRepo", "Auth headers cleared")
+    }
+
     private suspend fun saveSessionTimestamp() {
         try {
             context.dataStore.edit { prefs ->
@@ -515,18 +524,29 @@ suspend fun register(nombre: String, direccion: String, telefono: String, email:
             _misMascotas.value = emptyList()
             clearUser()
             clearSessionTimestamp()
+            clearAuthHeaders() // LIMPIAR HEADERS DE AUTENTICACIÓN
             Result.Success(true)
         } catch (e: Exception) {
             _currentUser.value = null
             _misMascotas.value = emptyList()
             clearUser()
             clearSessionTimestamp()
+            clearAuthHeaders() // LIMPIAR HEADERS DE AUTENTICACIÓN incluso si falla el logout
             Result.Success(true)
         }
     }
     
     suspend fun checkSession(): Result<Usuario?> {
         return try {
+            // Primero verificar si hay headers de autenticación
+            val hasAuthHeaders = getSessionId() != null && getAuthToken() != null && getCachedUserId() > 0
+            
+            if (!hasAuthHeaders) {
+                // No hay headers de autenticación, usuario no está logueado
+                _currentUser.value = null
+                return Result.Success(null)
+            }
+            
             val response = api.getSession()
             if (response.isSuccessful) {
                 val body = response.body()
@@ -535,28 +555,33 @@ suspend fun register(nombre: String, direccion: String, telefono: String, email:
                     saveUser(body.usuario)
                     Result.Success(body.usuario)
                 } else {
-                    val cachedUser = _currentUser.value
-                    if (cachedUser != null) {
-                        Result.Success(cachedUser)
-                    } else {
-                        _currentUser.value = null
-                        Result.Success(null)
-                    }
+                    // Sesión inválida en el servidor, limpiar todo
+                    _currentUser.value = null
+                    clearUser()
+                    clearAuthHeaders()
+                    Result.Success(null)
                 }
             } else {
+                // Error del servidor, verificar si tenemos usuario cacheado válido
                 val cachedUser = _currentUser.value
-                if (cachedUser != null) {
+                if (cachedUser != null && hasAuthHeaders) {
+                    // Usar cache solo si tenemos headers de autenticación
                     Result.Success(cachedUser)
                 } else {
+                    _currentUser.value = null
                     Result.Success(null)
                 }
             }
         } catch (e: Exception) {
+            // Error de conexión, verificar si tenemos usuario cacheado válido
             val cachedUser = _currentUser.value
-            if (cachedUser != null) {
-                Log.d("MaikPetRepo", "Usando usuario cache por error de conexión")
+            val hasAuthHeaders = getSessionId() != null && getAuthToken() != null && getCachedUserId() > 0
+            
+            if (cachedUser != null && hasAuthHeaders) {
+                Log.d("MaikPetRepo", "Usando usuario cache por error de conexión (con headers válidos)")
                 Result.Success(cachedUser)
             } else {
+                _currentUser.value = null
                 Result.Success(null)
             }
         }
