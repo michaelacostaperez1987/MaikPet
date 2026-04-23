@@ -2,29 +2,34 @@ package com.macosta.maikpet.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Liquid Glass Theme - Transparente con acentos modernos
-val Background = Color(0xFFF5F5F7)           // Gris muy claro
-val Surface = Color(0xFFFFFFFF)              // Blanco cristal
-val SurfaceGlass = Color(0x40FFFFFF)         // Blanco translúcido (60% opacity)
-val SurfaceVariant = Color(0xE8E8E8)         // Gris claro
-val Primary = Color(0xFF007AFF)              // Azul iOS
-val PrimaryVariant = Color(0xFF0056B3)       // Azul oscuro
-val Secondary = Color(0xFF34C759)            // Verde iOS
-val OnBackground = Color(0xFF000000)         // Negro
-val OnSurface = Color(0xFF000000)            // Negro
-val OnPrimary = Color(0xFFFFFFFF)            // Blanco
-val CardBackground = Color(0xB3FFFFFF)       // Blanco con transparencia (70%)
-val Error = Color(0xFFFF3B30)                // Rojo iOS
+// iPhone Glass Crystal Theme
+val Background = Color(0xFFF2F2F7)              // Apple system gray background
+val Surface = Color(0xF0FFFFFF)                  // White with transparency (94%)
+val SurfaceGlass = Color(0xE6FFFFFF)            // Glass white (90% opacity)
+val SurfaceVariant = Color(0xFFE5E5EA)           // Apple gray 4
+val Primary = Color(0xFF007AFF)                  // iOS Blue
+val PrimaryVariant = Color(0xFF0056B3)           // Darker blue
+val Secondary = Color(0xFF34C759)                // iOS Green
+val OnBackground = Color(0xFF000000)             // Black
+val OnSurface = Color(0xFF000000)                // Black
+val OnPrimary = Color(0xFFFFFFFF)                // White
+val CardBackground = Color(0xF8FFFFFF)           // Card glass (97%)
+val Error = Color(0xFFFF3B30)                    // iOS Red
 val ErrorRed = Color(0xFFFF3B30)
-val InputBackground = Color(0xFFF0F0F0)      // Gris muy claro
-val TextSecondary = Color(0xFF6B6B6B)        // Gris medio
-val Border = Color(0xFFD1D1D6)               // Borde gris claro
+val InputBackground = Color(0xFFE5E5EA)          // Apple gray
+val TextSecondary = Color(0xFF8E8E93)            // iOS secondary label
+val Border = Color(0xFFC6C6C8)                   // iOS separator
 val DeleteRed = Color(0xFFFF3B30)
 val WarningOrange = Color(0xFFFF9500)
 val WhatsAppGreen = Color(0xFF34C759)
 
-// Colores adicionales para Liquid Glass
-val GlassBorder = Color(0x80FFFFFF)          // Borde de cristal
-val GlassShine = Color(0x20FFFFFF)           // Brillo de cristal
-val ShadowColor = Color(0x1A000000)          // Sombra suave
-val Overlay = Color(0x40000000)              // Overlay oscuro
+// Glass effect colors
+val GlassBorder = Color(0x33000000)             // Subtle dark border
+val GlassShine = Color(0x1AFFFFFF)              // White shine
+val ShadowColor = Color(0x0D000000)             // Very subtle shadow
+val Overlay = Color(0x26000000)                 // Dark overlay
+
+// Additional Apple-style colors
+val TabBarBackground = Color(0xF9F9F9)          // Tab bar
+val NavigationBar = Color(0xF8F8F8)             // Bottom nav
+val CardBorder = Color(0x1A000000)              // Subtle card border
