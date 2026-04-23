@@ -1,17 +1,28 @@
 <?php
 require_once 'config.php';
 
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS, DELETE');
+header('Access-Control-Allow-Headers: Content-Type, X-Session-Id, X-Auth-Token, X-User-Id');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
 if (!isLoggedIn()) {
-    header('HTTP/1.1 200 OK');
     jsonResponse(['success' => false, 'error' => 'No autorizado']);
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $_SERVER['REQUEST_METHOD'] !== 'DELETE') {
-    header('HTTP/1.1 200 OK');
     jsonResponse(['success' => false, 'error' => 'Método no permitido']);
 }
 
 $data = json_decode(file_get_contents('php://input'), true);
+if ($data === null) {
+    jsonResponse(['success' => false, 'error' => 'JSON inválido']);
+}
+
 $mascota_id = intval($data['id'] ?? 0);
 
 if ($mascota_id <= 0) {

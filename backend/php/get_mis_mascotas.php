@@ -1,8 +1,16 @@
 <?php
 require_once 'config.php';
 
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, X-Session-Id, X-Auth-Token, X-User-Id');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
 if (!isLoggedIn()) {
-    header('HTTP/1.1 200 OK');
     jsonResponse(['success' => false, 'error' => 'No autorizado']);
 }
 
@@ -38,5 +46,5 @@ while ($row = $result->fetch_assoc()) {
     ];
 }
 
-jsonResponse($mascotas);
+jsonResponse(['success' => true, 'mascotas' => $mascotas]);
 ?>

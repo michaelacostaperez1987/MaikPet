@@ -1,23 +1,21 @@
 <?php
-error_reporting(0);
-ini_set('display_errors', 0);
-header('Content-Type: application/json; charset=utf-8');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, X-Session-Id, X-Auth-Token, X-User-Id');
 
-require_once 'config.php';
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+require_once 'config.php'; // isLoggedIn() ya maneja la autenticación
 
 if (!isLoggedIn()) {
-    error_log('add_mascota: No autorizado. Session ID: ' . session_id() . ', SESSION: ' . json_encode($_SESSION));
-    echo json_encode(['success' => false, 'error' => 'No autorizado', 'debug' => [
-        'session_id' => session_id(),
-        'session_user_id' => $_SESSION['usuario_id'] ?? null,
-        'headers_received' => function_exists('getallheaders') ? getallheaders() : []
-    ]]);
-    exit;
+    jsonResponse(['success' => false, 'error' => 'No autorizado']);
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo json_encode(['success' => false, 'error' => 'Metodo no permitido']);
-    exit;
+    jsonResponse(['success' => false, 'error' => 'Metodo no permitido']);
 }
 
 $data = json_decode(file_get_contents('php://input'), true);
@@ -33,11 +31,9 @@ $lng = isset($data['lng']) && $data['lng'] !== null ? floatval($data['lng']) : n
 $imagen = $data['imagen'] ?? null;
 
 if (empty($nombre) || empty($tipo) || $edad_meses <= 0 || empty($vacunas) || empty($direccion)) {
-    echo json_encode(['success' => false, 'error' => 'Todos los campos son obligatorios']);
-    exit;
+    jsonResponse(['success' => false, 'error' => 'Todos los campos son obligatorios']);
 }
 
-// Validar que no sea venta o reproduccion
 $palabrasProhibidas = [
     'venta', 'vendo', 'precio', 'dolares', 'ufs', 'u$s', 
     'comprar', 'compro', 'costo', 'valor', 'permuta', 
@@ -48,13 +44,19 @@ $descripcionLower = mb_strtolower($descripcion);
 
 foreach ($palabrasProhibidas as $palabra) {
     if (strpos($descripcionLower, $palabra) !== false) {
-        echo json_encode(['success' => false, 'error' => 'No se permiten ventas, cruzas ni permutas. Solo adopciones gratuitas.']);
-        exit;
+        jsonResponse(['success' => false, 'error' => 'No se permiten ventas, cruzas ni permutas. Solo adopciones gratuitas.']);
     }
 }
 
 $conn = getConnection();
-$usuario_id = $_SESSION['usuario_id'];
+
+// Obtener user_id desde header o sesión
+$userIdFromHeader = $_SERVER['HTTP_X_USER_ID'] ?? '';
+$usuario_id = !empty($userIdFromHeader) ? intval($userIdFromHeader) : ($_SESSION['usuario_id'] ?? 0);
+
+if ($usuario_id <= 0) {
+    jsonResponse(['success' => false, 'error' => 'Usuario no identificado']);
+}
 
 $nombre_esc = $conn->real_escape_string($nombre);
 $tipo_esc = $conn->real_escape_string($tipo);
@@ -71,12 +73,23 @@ $result = $conn->query($sql);
 
 if ($result) {
     $id = $conn->insert_id;
-    echo json_encode([
+    
+    $mascota = [
+        'id' => $id,
+        'nombre' => $nombre,
+        'tipo' => $tipo,
+        'edad_meses' => $edad_meses,
+        'direccion' => $direccion
+    ];
+    
+    notifyNewMascota($mascota, $usuario_id);
+    
+    jsonResponse([
         'success' => true,
         'message' => 'Mascota registrada correctamente',
         'id' => $id
     ]);
 } else {
-    echo json_encode(['success' => false, 'error' => 'Error al registrar: ' . $conn->error]);
+    jsonResponse(['success' => false, 'error' => 'Error al registrar: ' . $conn->error]);
 }
 ?>
