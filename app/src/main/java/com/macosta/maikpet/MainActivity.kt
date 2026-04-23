@@ -5,14 +5,12 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.os.Process
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -23,10 +21,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -59,18 +53,31 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         
         requestNotificationPermission()
+
+        val isGuestFromIntent = intent.getBooleanExtra("isGuest", false)
         
         setContent {
             PetTheme {
                 val viewModel: MainViewModel = hiltViewModel()
                 val uiState by viewModel.uiState.collectAsState()
-                
-                // Verificar autenticación - si no hay usuario logueado, ir a login
-                LaunchedEffect(uiState.isLoggedIn, uiState.currentUser) {
-                    if (!uiState.isLoggedIn && uiState.currentUser == null) {
-                        // Navegar a LoginActivity
+
+                // Inicializar sesión con el flag de invitado
+                LaunchedEffect(Unit) {
+                    viewModel.initSession(isGuest = isGuestFromIntent)
+                }
+
+                // Verificar autenticación - solo cuando el ViewModel esté inicializado
+                LaunchedEffect(uiState.initialized, uiState.isLoggedIn, uiState.currentUser, uiState.isGuest) {
+                    if (uiState.initialized && !uiState.isLoggedIn && uiState.currentUser == null && !uiState.isGuest) {
                         startActivity(Intent(this@MainActivity, LoginActivity::class.java))
                         finish()
+                    }
+                }
+                
+                // Si es invitado, forzar pantalla de adopción al inicio
+                LaunchedEffect(uiState.isGuest) {
+                    if (uiState.isGuest) {
+                        viewModel.navigateTo(Screen.Adopcion)
                     }
                 }
                 
@@ -115,12 +122,19 @@ fun MaikPetApp(viewModel: MainViewModel) {
     LaunchedEffect(uiState.error) {
         uiState.error?.let { error ->
             Toast.makeText(context, "ERROR: $error", Toast.LENGTH_LONG).show()
+            android.util.Log.e("MaikPetApp", "Error shown: $error")
             viewModel.clearError()
         }
     }
     
     BackHandler {
-        if (uiState.currentScreen != Screen.Mapa) {
+        if (uiState.isGuest) {
+            if (uiState.currentScreen != Screen.Adopcion) {
+                viewModel.navigateTo(Screen.Adopcion)
+            } else {
+                (context as? ComponentActivity)?.finish()
+            }
+        } else if (uiState.currentScreen != Screen.Mapa) {
             viewModel.navigateTo(Screen.Mapa)
         } else {
             (context as? ComponentActivity)?.finish()
@@ -171,7 +185,6 @@ fun MaikPetApp(viewModel: MainViewModel) {
                 )
                 Screen.Mapa -> MapaScreen(
                     mascotas = uiState.mascotas,
-                    onLocationUpdate = { },
                     onRefresh = { viewModel.loadMascotas() },
                     isLoading = uiState.isLoading
                 )
@@ -227,6 +240,9 @@ fun MaikPetApp(viewModel: MainViewModel) {
                         onSave = { nombre, tipo, edad, visas, direccion, descripcion, imagen ->
                             viewModel.updateMascota(nombre, tipo, edad, visas, direccion, descripcion, imagen)
                         },
+                        onDelete = { mascotaId ->
+                            viewModel.deleteMascota(mascotaId)
+                        },
                         onBack = { viewModel.navigateTo(Screen.MisMascotas) }
                     )
                 }
@@ -264,60 +280,90 @@ fun MaikPetApp(viewModel: MainViewModel) {
                     .navigationBarsPadding()
             ) {
                 // Perfil del usuario
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    currentUser?.let { usuario ->
+                if (uiState.isGuest) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Person,
-                            contentDescription = "Usuario",
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .background(Primary.copy(alpha = 0.2f)),
-                            tint = Primary
+                            contentDescription = "Invitado",
+                            modifier = Modifier.size(48.dp),
+                            tint = TextSecondary
                         )
-                        
                         Spacer(modifier = Modifier.width(12.dp))
-                        
                         Column {
                             Text(
-                                text = usuario.nombre.ifEmpty { "Usuario" },
+                                text = "Invitado",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium
                             )
                             Text(
-                                text = usuario.email,
+                                text = "Explora adopciones",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = TextSecondary
                             )
                         }
-                    } ?: run {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Usuario",
-                            modifier = Modifier.size(48.dp),
-                            tint = Primary
-                        )
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        currentUser?.let { usuario ->
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Usuario",
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(Primary.copy(alpha = 0.2f)),
+                                tint = Primary
+                            )
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Column {
+                                Text(
+                                    text = usuario.nombre.ifEmpty { "Usuario" },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = usuario.email,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = TextSecondary
+                                )
+                            }
+                        } ?: run {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Usuario",
+                                modifier = Modifier.size(48.dp),
+                                tint = Primary
+                            )
+                        }
                     }
                 }
-                
                 Spacer(modifier = Modifier.height(24.dp))
                 HorizontalDivider(color = Border)
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                DrawerItem(
-                    icon = Icons.Default.Map,
-                    text = "Mapa",
-                    selected = uiState.currentScreen == Screen.Mapa,
-                    onClick = {
-                        viewModel.navigateTo(Screen.Mapa)
-                        drawerOpen = false
-                    }
-                )
+                if (!uiState.isGuest) {
+                    DrawerItem(
+                        icon = Icons.Default.Map,
+                        text = "Mapa",
+                        selected = uiState.currentScreen == Screen.Mapa,
+                        onClick = {
+                            viewModel.navigateTo(Screen.Mapa)
+                            drawerOpen = false
+                        }
+                    )
+                }
                 DrawerItem(
                     icon = Icons.Default.Pets,
                     text = "Ver Adopciones",
@@ -327,47 +373,63 @@ fun MaikPetApp(viewModel: MainViewModel) {
                         drawerOpen = false
                     }
                 )
-                DrawerItem(
-                    icon = Icons.Default.Favorite,
-                    text = "Dar en Adopción",
-                    selected = uiState.currentScreen == Screen.DarAdopcion,
-                    onClick = {
-                        viewModel.navigateTo(Screen.DarAdopcion)
-                        drawerOpen = false
-                    }
-                )
-                DrawerItem(
-                    icon = Icons.Default.Edit,
-                    text = "Editar Perfil",
-                    selected = uiState.currentScreen == Screen.EditarPerfil,
-                    onClick = {
-                        viewModel.navigateTo(Screen.EditarPerfil)
-                        drawerOpen = false
-                    }
-                )
-                DrawerItem(
-                    icon = Icons.Default.List,
-                    text = "Mis Mascotas",
-                    selected = uiState.currentScreen == Screen.MisMascotas,
-                    onClick = {
-                        viewModel.navigateTo(Screen.MisMascotas)
-                        drawerOpen = false
-                    }
-                )
+                if (!uiState.isGuest) {
+                    DrawerItem(
+                        icon = Icons.Default.Favorite,
+                        text = "Dar en Adopción",
+                        selected = uiState.currentScreen == Screen.DarAdopcion,
+                        onClick = {
+                            viewModel.navigateTo(Screen.DarAdopcion)
+                            drawerOpen = false
+                        }
+                    )
+                    DrawerItem(
+                        icon = Icons.Default.Edit,
+                        text = "Editar Perfil",
+                        selected = uiState.currentScreen == Screen.EditarPerfil,
+                        onClick = {
+                            viewModel.navigateTo(Screen.EditarPerfil)
+                            drawerOpen = false
+                        }
+                    )
+                    DrawerItem(
+                        icon = Icons.Default.List,
+                        text = "Mis Mascotas",
+                        selected = uiState.currentScreen == Screen.MisMascotas,
+                        onClick = {
+                            viewModel.navigateTo(Screen.MisMascotas)
+                            drawerOpen = false
+                        }
+                    )
+                }
                 
                 Spacer(modifier = Modifier.weight(1f))
                 HorizontalDivider(color = Border)
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                DrawerItem(
-                    icon = Icons.Default.Logout,
-                    text = "Cerrar Sesión",
-                    selected = false,
-                    onClick = {
-                        viewModel.logout()
-                        drawerOpen = false
-                    }
-                )
+                if (uiState.isGuest) {
+                    DrawerItem(
+                        icon = Icons.Default.Login,
+                        text = "Iniciar Sesión",
+                        selected = false,
+                        onClick = {
+                            drawerOpen = false
+                            viewModel.loginFromGuest()
+                            context.startActivity(Intent(context, LoginActivity::class.java))
+                            (context as? ComponentActivity)?.finish()
+                        }
+                    )
+                } else {
+                    DrawerItem(
+                        icon = Icons.Default.Logout,
+                        text = "Cerrar Sesión",
+                        selected = false,
+                        onClick = {
+                            viewModel.logout()
+                            drawerOpen = false
+                        }
+                    )
+                }
                 
                 DrawerItem(
                     icon = Icons.Default.Info,

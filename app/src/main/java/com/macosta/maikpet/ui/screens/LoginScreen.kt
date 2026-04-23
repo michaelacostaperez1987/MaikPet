@@ -32,6 +32,7 @@ fun LoginScreen(
     onViewTerms: () -> Unit,
     onViewPrivacy: () -> Unit,
     onClearError: () -> Unit,
+    onGuestMode: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var isLoginMode by remember { mutableStateOf(true) }
@@ -131,7 +132,8 @@ fun LoginScreen(
                             onValueChange = { nombre = it },
                             label = { Text("Nombre completo *") },
                             modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
+                            singleLine = true,
+                            colors = textFieldColors()
                         )
                         
                         Spacer(modifier = Modifier.height(12.dp))
@@ -141,7 +143,8 @@ fun LoginScreen(
                             onValueChange = { direccion = it },
                             label = { Text("Dirección") },
                             modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
+                            singleLine = true,
+                            colors = textFieldColors()
                         )
                         
                         Spacer(modifier = Modifier.height(12.dp))
@@ -152,7 +155,8 @@ fun LoginScreen(
                             label = { Text("Teléfono") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            colors = textFieldColors()
                         )
                         
                         Spacer(modifier = Modifier.height(12.dp))
@@ -160,10 +164,17 @@ fun LoginScreen(
                         OutlinedTextField(
                             value = edad,
                             onValueChange = { edad = it.filter { c -> c.isDigit() } },
-                            label = { Text("Edad") },
+                            label = { Text("Edad *") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            colors = textFieldColors(),
+                            isError = edad.isNotEmpty() && (edad.toIntOrNull() ?: 0) < 18,
+                            supportingText = {
+                                if (edad.isNotEmpty() && (edad.toIntOrNull() ?: 0) < 18) {
+                                    Text("Debes ser mayor de 18 años", color = ErrorRed)
+                                }
+                            }
                         )
                         
                         Spacer(modifier = Modifier.height(12.dp))
@@ -176,7 +187,8 @@ fun LoginScreen(
                         label = { Text("Email *") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        colors = textFieldColors()
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -189,6 +201,7 @@ fun LoginScreen(
                         singleLine = true,
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        colors = textFieldColors(),
                         trailingIcon = {
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                 Icon(
@@ -210,7 +223,8 @@ fun LoginScreen(
                             singleLine = true,
                             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                            isError = confirmPassword.isNotEmpty() && password != confirmPassword
+                            isError = confirmPassword.isNotEmpty() && password != confirmPassword,
+                            colors = textFieldColors()
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -261,14 +275,15 @@ fun LoginScreen(
                             if (isLoginMode) {
                                 onLogin(email, password)
                             } else {
-                                if (password == confirmPassword && acceptedTerms) {
+                                val edadValor = edad.toIntOrNull() ?: 0
+                                if (password == confirmPassword && acceptedTerms && edadValor >= 18) {
                                     onRegister(
                                         nombre,
                                         direccion,
                                         telefono,
                                         email,
                                         password,
-                                        edad.toIntOrNull() ?: 0
+                                        edadValor
                                     )
                                 }
                             }
@@ -314,6 +329,21 @@ fun LoginScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+
+            // Botón modo invitado
+            TextButton(
+                onClick = onGuestMode,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading
+            ) {
+                Text(
+                    text = "Entrar como Invitado",
+                    color = TextSecondary,
+                    fontWeight = FontWeight.Normal
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Info adicional
             Text(

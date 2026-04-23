@@ -1,22 +1,21 @@
 package com.macosta.maikpet.firebase
 
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.macosta.maikpet.MainActivity
 import com.macosta.maikpet.R
 import com.macosta.maikpet.data.api.MaikPetApi
 import com.macosta.maikpet.data.api.TokenRequest
+import com.macosta.maikpet.util.NotificationUtils
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -59,7 +58,7 @@ class MaikPetFirebaseService : FirebaseMessagingService() {
         val userId = prefs.getInt("user_id", 0)
         
         if (userId > 0) {
-            CoroutineScope(Dispatchers.IO).launch {
+            kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
                 try {
                     val response = api.saveDeviceToken(TokenRequest(token, userId))
                     Log.d("FCM", "Token enviado al servidor: ${response.isSuccessful}")
@@ -71,20 +70,14 @@ class MaikPetFirebaseService : FirebaseMessagingService() {
     }
 
     private fun showNotification(title: String, body: String, mascotaId: String?) {
-        val channelId = "maikpet_channel"
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "MaikPet Notificaciones",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Notificaciones de nuevas mascotas para adopción"
-                enableVibration(true)
-            }
-            notificationManager.createNotificationChannel(channel)
-        }
+        NotificationUtils.createChannel(
+            notificationManager = notificationManager,
+            channelId = NotificationUtils.CHANNEL_GENERAL,
+            channelName = "MaikPet Notificaciones",
+            description = "Notificaciones de nuevas mascotas para adopción"
+        )
 
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -97,7 +90,7 @@ class MaikPetFirebaseService : FirebaseMessagingService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(this, channelId)
+        val notification = NotificationCompat.Builder(this, NotificationUtils.CHANNEL_GENERAL)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
             .setContentText(body)

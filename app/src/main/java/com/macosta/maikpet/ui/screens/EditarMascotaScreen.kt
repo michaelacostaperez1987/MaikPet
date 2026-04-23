@@ -3,9 +3,7 @@ package com.macosta.maikpet.ui.screens
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
-import android.util.Base64
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -28,14 +26,14 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
 import com.macosta.maikpet.data.model.Mascota
 import com.macosta.maikpet.ui.components.InfoCard
 import com.macosta.maikpet.ui.theme.*
-import java.io.ByteArrayOutputStream
+import com.macosta.maikpet.util.ImageUtils
+import kotlinx.coroutines.delay
 
 @Composable
 fun EditarMascotaScreen(
@@ -44,6 +42,7 @@ fun EditarMascotaScreen(
     isGeocoding: Boolean = false,
     geocodingMessage: String? = null,
     onSave: (nombre: String, tipo: String, edadMeses: Int, vacunas: String, direccion: String, descripcion: String, imagenBase64: String?) -> Unit,
+    onDelete: (Int) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -66,7 +65,7 @@ fun EditarMascotaScreen(
     ) { uri: Uri? ->
         uri?.let {
             selectedImageUri = it
-            selectedImageBase64 = convertUriToBase64(context, it)
+            selectedImageBase64 = ImageUtils.convertUriToBase64(context, it)
         }
     }
     
@@ -75,7 +74,7 @@ fun EditarMascotaScreen(
     ) { bitmap: Bitmap? ->
         bitmap?.let {
             selectedImageUri = null
-            selectedImageBase64 = bitmapToBase64(it)
+            selectedImageBase64 = ImageUtils.bitmapToBase64(it)
         }
     }
     
@@ -186,11 +185,7 @@ fun EditarMascotaScreen(
                         if (mascota.imagen.startsWith("data:image")) {
                             var bitmap by remember { mutableStateOf<Bitmap?>(null) }
                             LaunchedEffect(mascota.imagen) {
-                                bitmap = try {
-                                    val base64Data = mascota.imagen.substringAfter("base64,")
-                                    val imageBytes = Base64.decode(base64Data, Base64.DEFAULT)
-                                    BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-                                } catch (e: Exception) { null }
+                                bitmap = ImageUtils.decodeBase64ToBitmap(mascota.imagen)
                             }
                             bitmap?.let {
                                 Image(
@@ -280,14 +275,7 @@ fun EditarMascotaScreen(
             onValueChange = { nombre = it },
             label = { Text("🐕 Nombre del animal") },
             modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Primary,
-                unfocusedBorderColor = Border,
-                focusedLabelColor = Primary,
-                unfocusedLabelColor = TextSecondary,
-                focusedTextColor = OnBackground,
-                unfocusedTextColor = OnBackground
-            ),
+            colors = textFieldColors(),
             shape = RoundedCornerShape(12.dp),
             singleLine = true
         )
@@ -333,14 +321,7 @@ fun EditarMascotaScreen(
             onValueChange = { if (it.all { char -> char.isDigit() }) edadMeses = it },
             label = { Text("📅 Edad (en meses)") },
             modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Primary,
-                unfocusedBorderColor = Border,
-                focusedLabelColor = Primary,
-                unfocusedLabelColor = TextSecondary,
-                focusedTextColor = OnBackground,
-                unfocusedTextColor = OnBackground
-            ),
+            colors = textFieldColors(),
             shape = RoundedCornerShape(12.dp),
             singleLine = true
         )
@@ -386,14 +367,7 @@ fun EditarMascotaScreen(
             onValueChange = { direccion = it },
             label = { Text("📍 Dirección") },
             modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Primary,
-                unfocusedBorderColor = Border,
-                focusedLabelColor = Primary,
-                unfocusedLabelColor = TextSecondary,
-                focusedTextColor = OnBackground,
-                unfocusedTextColor = OnBackground
-            ),
+            colors = textFieldColors(),
             shape = RoundedCornerShape(12.dp),
             singleLine = true
         )
@@ -407,14 +381,7 @@ fun EditarMascotaScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(100.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Primary,
-                unfocusedBorderColor = Border,
-                focusedLabelColor = Primary,
-                unfocusedLabelColor = TextSecondary,
-                focusedTextColor = OnBackground,
-                unfocusedTextColor = OnBackground
-            ),
+            colors = textFieldColors(),
             shape = RoundedCornerShape(12.dp),
             maxLines = 4
         )
@@ -502,33 +469,12 @@ fun EditarMascotaScreen(
                 dismissButton = {
                     TextButton(onClick = {
                         showDeleteConfirm = false
+                        onDelete(mascota.id)
                     }) {
                         Text("Eliminar", color = DeleteRed)
                     }
                 }
             )
         }
-    }
-}
-
-private fun convertUriToBase64(context: android.content.Context, uri: Uri): String? {
-    return try {
-        val inputStream = context.contentResolver.openInputStream(uri)
-        val bitmap = BitmapFactory.decodeStream(inputStream)
-        bitmapToBase64(bitmap)
-    } catch (e: Exception) {
-        null
-    }
-}
-
-private fun bitmapToBase64(bitmap: Bitmap): String? {
-    return try {
-        val resized = Bitmap.createScaledBitmap(bitmap, 300, 300, true)
-        val outputStream = ByteArrayOutputStream()
-        resized.compress(Bitmap.CompressFormat.JPEG, 70, outputStream)
-        val bytes = outputStream.toByteArray()
-        "data:image/jpeg;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP)
-    } catch (e: Exception) {
-        null
     }
 }

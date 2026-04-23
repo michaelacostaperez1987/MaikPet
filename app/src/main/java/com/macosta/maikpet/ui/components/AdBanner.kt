@@ -18,34 +18,21 @@ fun AdBanner(
     modifier: Modifier = Modifier,
     adUnitId: String = "ca-app-pub-9690126773049877/7454361529"
 ) {
-    val context = LocalContext.current
-    
-    Box(modifier = modifier.height(60.dp)) {
-        AndroidView(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(8.dp)),
-            factory = { ctx ->
-                AdView(ctx).apply {
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                    setAdSize(AdSize.BANNER)
-                    this.adUnitId = adUnitId
-                    
-                    val adRequest = AdRequest.Builder().build()
-                    loadAd(adRequest)
-                }
-            }
-        )
-    }
+    AdBannerView(modifier = modifier, adUnitId = adUnitId)
 }
 
 @Composable
 fun AdBannerSmall(
     modifier: Modifier = Modifier,
     adUnitId: String = "ca-app-pub-9690126773049877/7454361529"
+) {
+    AdBannerView(modifier = modifier, adUnitId = adUnitId)
+}
+
+@Composable
+private fun AdBannerView(
+    modifier: Modifier = Modifier,
+    adUnitId: String
 ) {
     val context = LocalContext.current
     

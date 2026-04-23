@@ -1,9 +1,7 @@
 package com.macosta.maikpet.ui.screens
 
 import android.content.Intent
-import android.graphics.BitmapFactory
 import android.net.Uri
-import android.util.Base64
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,7 +12,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pets
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,6 +29,7 @@ import com.macosta.maikpet.ui.components.InfoCard
 import com.macosta.maikpet.ui.components.LoadingIndicator
 import com.macosta.maikpet.ui.components.MascotaCard
 import com.macosta.maikpet.ui.theme.*
+import com.macosta.maikpet.util.ImageUtils
 
 @Composable
 fun AdopcionScreen(
@@ -277,17 +275,7 @@ fun MascotaImagen(
     var bitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
     
     LaunchedEffect(imagen) {
-        bitmap = try {
-            if (imagen.startsWith("data:image")) {
-                val base64Data = imagen.substringAfter("base64,")
-                val imageBytes = Base64.decode(base64Data, Base64.DEFAULT)
-                BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-            } else {
-                null
-            }
-        } catch (e: Exception) {
-            null
-        }
+        bitmap = ImageUtils.decodeBase64ToBitmap(imagen)
     }
     
     Box(

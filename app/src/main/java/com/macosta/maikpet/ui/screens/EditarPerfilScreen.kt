@@ -33,7 +33,6 @@ fun EditarPerfilScreen(
     var nombre by remember { mutableStateOf(currentUser?.nombre ?: "") }
     var direccion by remember { mutableStateOf(currentUser?.direccion ?: "") }
     var telefono by remember { mutableStateOf(currentUser?.telefono ?: "") }
-    var mensajeExito by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
 
@@ -162,27 +161,6 @@ fun EditarPerfilScreen(
                 visualTransformation = PasswordVisualTransformation()
             )
 
-            if (mensajeExito) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Primary.copy(alpha = 0.2f)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = "✅", style = MaterialTheme.typography.bodyLarge)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Perfil actualizado correctamente",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Primary
-                        )
-                    }
-                }
-            }
-
             if (isLoading) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(
@@ -199,7 +177,6 @@ fun EditarPerfilScreen(
                 onClick = {
                     if (nombre.isNotBlank() && direccion.isNotBlank() && telefono.isNotBlank()) {
                         onSave(nombre, direccion, telefono)
-                        mensajeExito = true
                     }
                 },
                 modifier = Modifier

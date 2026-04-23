@@ -10,26 +10,27 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.macosta.maikpet.ui.screens.LegalScreen
 import com.macosta.maikpet.ui.screens.LoginScreen
-import com.macosta.maikpet.ui.screens.TermsActivity
-import com.macosta.maikpet.ui.screens.PrivacyActivity
 import com.macosta.maikpet.ui.theme.PetTheme
 import com.macosta.maikpet.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class LoginActivity : ComponentActivity() {
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        
+
         setContent {
             PetTheme {
                 val viewModel: MainViewModel = hiltViewModel()
                 val uiState by viewModel.uiState.collectAsState()
-                
+                var showLegal by remember { mutableStateOf(false) }
+
                 // Verificar si ya hay sesión
                 LaunchedEffect(uiState.currentUser) {
                     if (uiState.currentUser != null) {
@@ -37,7 +38,7 @@ class LoginActivity : ComponentActivity() {
                         finish()
                     }
                 }
-                
+
                 LoginScreen(
                     isLoading = uiState.isLoading,
                     error = uiState.error,
@@ -47,10 +48,23 @@ class LoginActivity : ComponentActivity() {
                     onRegister = { nombre, direccion, telefono, email, password, edad ->
                         viewModel.register(nombre, direccion, telefono, email, password, edad)
                     },
-                    onViewTerms = { startActivity(Intent(this, TermsActivity::class.java)) },
-                    onViewPrivacy = { startActivity(Intent(this, PrivacyActivity::class.java)) },
-                    onClearError = { viewModel.clearError() }
+                    onViewTerms = { showLegal = true },
+                    onViewPrivacy = { showLegal = true },
+                    onClearError = { viewModel.clearError() },
+                    onGuestMode = {
+                        val intent = Intent(this@LoginActivity, MainActivity::class.java)
+                        intent.putExtra("isGuest", true)
+                        startActivity(intent)
+                        finish()
+                    }
                 )
+
+                if (showLegal) {
+                    LegalScreen(
+                        onBack = { showLegal = false },
+                        showAsInitial = true
+                    )
+                }
             }
         }
     }

@@ -1,5 +1,7 @@
 package com.macosta.maikpet.ui.theme
 
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 // iPhone Glass Crystal Theme
@@ -36,3 +38,14 @@ val CardBorder = Color(0x1A000000)              // Subtle card border
 
 // Gradient for intro screen
 val PrimaryGradient = Color(0xFF007AFF)         // Solid primary color for now
+
+@Composable
+fun textFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = Primary,
+    unfocusedBorderColor = Border,
+    focusedTextColor = OnBackground,
+    unfocusedTextColor = OnBackground,
+    cursorColor = Primary,
+    focusedLabelColor = Primary,
+    unfocusedLabelColor = TextSecondary
+)

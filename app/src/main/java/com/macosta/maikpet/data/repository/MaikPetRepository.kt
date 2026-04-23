@@ -143,28 +143,27 @@ class MaikPetRepository @Inject constructor(
 
     private suspend fun loadSavedUser() {
         try {
-            context.dataStore.data.collect { prefs ->
-                val userJson = prefs[USER_KEY]
-                if (userJson != null) {
-                    try {
-                        val user = gson.fromJson(userJson, Usuario::class.java)
-                        val diasTranscurridos = (System.currentTimeMillis() - user.fechaRegistro) / (1000 * 60 * 60 * 24)
-                        if (diasTranscurridos > 90) {
-                            Log.d("MaikPetRepo", "Datos eliminados: usuario expirado (>90 días)")
-                            clearUser()
-                            clearSessionTimestamp()
-                        } else if (isSessionExpired()) {
-                            Log.d("MaikPetRepo", "Sesión expirada (>7 días)")
-                            _currentUser.value = null
-                            clearUser()
-                            clearSessionTimestamp()
-                        } else {
-                            _currentUser.value = user
-                            Log.d("MaikPetRepo", "Usuario cargado desde cache: ${user.nombre}")
-                        }
-                    } catch (e: Exception) {
-                        Log.e("MaikPetRepo", "Error al parsear usuario guardado", e)
+            val prefs = context.dataStore.data.first()
+            val userJson = prefs[USER_KEY]
+            if (userJson != null) {
+                try {
+                    val user = gson.fromJson(userJson, Usuario::class.java)
+                    val diasTranscurridos = (System.currentTimeMillis() - user.fechaRegistro) / (1000 * 60 * 60 * 24)
+                    if (diasTranscurridos > 90) {
+                        Log.d("MaikPetRepo", "Datos eliminados: usuario expirado (>90 días)")
+                        clearUser()
+                        clearSessionTimestamp()
+                    } else if (isSessionExpired()) {
+                        Log.d("MaikPetRepo", "Sesión expirada (>7 días)")
+                        _currentUser.value = null
+                        clearUser()
+                        clearSessionTimestamp()
+                    } else {
+                        _currentUser.value = user
+                        Log.d("MaikPetRepo", "Usuario cargado desde cache: ${user.nombre}")
                     }
+                } catch (e: Exception) {
+                    Log.e("MaikPetRepo", "Error al parsear usuario guardado", e)
                 }
             }
         } catch (e: Exception) {
@@ -226,14 +225,23 @@ class MaikPetRepository @Inject constructor(
                 }
                 Result.Error(if (hasCache) "Sin conexión. Mostrando datos guardados." else errorMsg)
             }
-        } catch (e: java.net.UnknownHostException) {
-            Result.Error("Sin conexión. Mostrando datos guardados.")
+} catch (e: java.net.UnknownHostException) {
+            Log.e("MaikPetRepo", "UnknownHostException: ${e.message}")
+            Result.Error("Sin conexión a internet")
         } catch (e: java.net.SocketTimeoutException) {
+            Log.e("MaikPetRepo", "SocketTimeoutException: ${e.message}")
             Result.Error("Tiempo de espera agotado. Intenta de nuevo.")
+        } catch (e: javax.net.ssl.SSLException) {
+            Log.e("MaikPetRepo", "SSLException: ${e.message}", e)
+            Result.Error("Error de conexión segura")
         } catch (e: retrofit2.HttpException) {
+            Log.e("MaikPetRepo", "HttpException: ${e.code()} - ${e.message}")
             Result.Error("Error de conexión (${e.code()})")
         } catch (e: Exception) {
-            Result.Error("Error de conexión")
+            val errorType = e.javaClass.simpleName
+            Log.e("MaikPetRepo", "Exception: $errorType - ${e.message}", e)
+            e.printStackTrace()
+            Result.Error("Error ($errorType): verifica tu conexión")
         } finally {
             _isLoading.value = false
         }

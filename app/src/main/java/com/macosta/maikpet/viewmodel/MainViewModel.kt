@@ -16,7 +16,9 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class MainUiState(
-    val isLoggedIn: Boolean = true,
+    val isLoggedIn: Boolean = false,
+    val isGuest: Boolean = false,
+    val initialized: Boolean = false,
     val currentUser: Usuario? = null,
     val mascotas: List<com.macosta.maikpet.data.model.Mascota> = emptyList(),
     val misMascotas: List<com.macosta.maikpet.data.model.Mascota> = emptyList(),
@@ -26,8 +28,7 @@ data class MainUiState(
     val error: String? = null,
     val toastMessage: String? = null,
     val currentScreen: Screen = Screen.Mapa,
-    val selectedMascota: com.macosta.maikpet.data.model.Mascota? = null,
-    val showHome: Boolean = false
+    val selectedMascota: com.macosta.maikpet.data.model.Mascota? = null
 )
 
 enum class Screen {
@@ -45,8 +46,16 @@ class MainViewModel @Inject constructor(
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
     
     init {
-        checkSession()
         observeRepository()
+    }
+
+    fun initSession(isGuest: Boolean = false) {
+        if (isGuest) {
+            _uiState.update { it.copy(isGuest = true, initialized = true, currentScreen = Screen.Adopcion) }
+            loadMascotas()
+        } else {
+            checkSession()
+        }
     }
     
     private fun observeRepository() {
@@ -76,14 +85,17 @@ class MainViewModel @Inject constructor(
             }
         }
     }
-    
+
     private fun checkSession() {
         viewModelScope.launch {
+            // Si es guest, no verificar sesión
+            if (_uiState.value.isGuest) return@launch
+
             when (val result = repository.checkSession()) {
                 is com.macosta.maikpet.data.repository.Result.Success -> {
                     val user = result.data
                     if (user != null) {
-                        _uiState.update { it.copy(currentUser = user, isLoggedIn = true) }
+                        _uiState.update { it.copy(currentUser = user, isLoggedIn = true, initialized = true) }
                         // Enviar token FCM
                         val fcmToken = MaikPetFirebaseService.getToken(context)
                         if (fcmToken != null) repository.sendDeviceToken(fcmToken)
@@ -92,7 +104,8 @@ class MainViewModel @Inject constructor(
                         // No hay usuario, solo actualizar estado - MainActivity manejará la navegación
                         _uiState.update { it.copy(
                             currentUser = null, 
-                            isLoggedIn = false
+                            isLoggedIn = false,
+                            initialized = true
                         ) }
                     }
                     loadMascotas()
@@ -101,7 +114,8 @@ class MainViewModel @Inject constructor(
                     // Error, solo actualizar estado - MainActivity manejará la navegación
                     _uiState.update { it.copy(
                         currentUser = null, 
-                        isLoggedIn = false
+                        isLoggedIn = false,
+                        initialized = true
                     ) }
                     loadMascotas()
                 }
@@ -261,13 +275,21 @@ class MainViewModel @Inject constructor(
         }
     }
     
+    fun setGuestMode() {
+        _uiState.update { it.copy(isGuest = true, currentScreen = Screen.Adopcion) }
+    }
+
+    fun loginFromGuest() {
+        _uiState.update { it.copy(isGuest = false) }
+    }
+
     fun logout() {
         viewModelScope.launch {
             repository.logout()
             _uiState.update { it.copy(
                 currentUser = null, 
-                isLoggedIn = false
-                // MainActivity manejará la navegación a LoginActivity
+                isLoggedIn = false,
+                isGuest = false
             ) }
         }
     }
@@ -343,9 +365,5 @@ class MainViewModel @Inject constructor(
     
     fun clearError() {
         _uiState.update { it.copy(error = null) }
-    }
-    
-    fun hideHome() {
-        _uiState.update { it.copy(showHome = false) }
     }
 }

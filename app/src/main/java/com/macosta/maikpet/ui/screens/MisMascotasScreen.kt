@@ -22,7 +22,6 @@ fun MisMascotasScreen(
     mascotas: List<Mascota>,
     isLoggedIn: Boolean,
     isLoading: Boolean,
-    selectedMascota: Mascota? = null,
     onDeleteMascota: (Int) -> Unit,
     onEditMascota: (Mascota) -> Unit,
     modifier: Modifier = Modifier

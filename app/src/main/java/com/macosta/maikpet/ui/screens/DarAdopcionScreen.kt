@@ -3,9 +3,7 @@ package com.macosta.maikpet.ui.screens
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
-import android.util.Base64
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -28,10 +26,11 @@ import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -41,8 +40,8 @@ import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
 import com.macosta.maikpet.ui.components.InfoCard
 import com.macosta.maikpet.ui.theme.*
+import com.macosta.maikpet.util.ImageUtils
 import com.macosta.maikpet.util.SoundPlayer
-import java.io.ByteArrayOutputStream
 
 @Composable
 fun DarAdopcionScreen(
@@ -63,22 +62,33 @@ fun DarAdopcionScreen(
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var selectedImageBase64 by remember { mutableStateOf<String?>(null) }
     var lastSubmittedTipo by remember { mutableStateOf("") }
-    var showImageOptions by remember { mutableStateOf(false) }
+    var triggerSound by remember { mutableStateOf(false) }
     var addressSuggestions by remember { mutableStateOf<List<String>>(emptyList()) }
     var showSuggestions by remember { mutableStateOf(false) }
     var showVentaError by remember { mutableStateOf(false) }
-    
-    val scrollState = rememberScrollState()
-    val scope = rememberCoroutineScope()
+    var showImageOptions by remember { mutableStateOf(false) }
+
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
     
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
             selectedImageUri = it
-            val base64 = convertUriToBase64(context, it)
-            selectedImageBase64 = base64
+            selectedImageBase64 = ImageUtils.convertUriToBase64(context, it)
+        }
+    }
+
+    LaunchedEffect(triggerSound) {
+        if (triggerSound && lastSubmittedTipo.isNotEmpty()) {
+            when (lastSubmittedTipo) {
+                "Perro" -> SoundPlayer.playDogBark(context)
+                "Gato" -> SoundPlayer.playCatMeow(context)
+            }
+            lastSubmittedTipo = ""
+            triggerSound = false
         }
     }
     
@@ -87,7 +97,7 @@ fun DarAdopcionScreen(
     ) { bitmap: Bitmap? ->
         bitmap?.let {
             selectedImageUri = null
-            selectedImageBase64 = bitmapToBase64(it)
+            selectedImageBase64 = ImageUtils.bitmapToBase64(it)
         }
     }
     
@@ -96,17 +106,6 @@ fun DarAdopcionScreen(
     ) { isGranted ->
         if (isGranted) {
             cameraLauncher.launch(null)
-        }
-    }
-    
-    LaunchedEffect(isLoading) {
-        if (!isLoading && lastSubmittedTipo.isNotEmpty()) {
-            if (lastSubmittedTipo == "Perro") {
-                SoundPlayer.playDogBark(context)
-            } else {
-                SoundPlayer.playCatMeow(context)
-            }
-            lastSubmittedTipo = ""
         }
     }
     
@@ -295,15 +294,7 @@ fun DarAdopcionScreen(
                 label = { Text("🐕 Nombre del animal") },
                 placeholder = { Text("Ej: Luna, Max, Simba") },
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Primary,
-                    unfocusedBorderColor = Border,
-                    focusedLabelColor = Primary,
-                    unfocusedLabelColor = TextSecondary,
-                    cursorColor = Primary,
-                    focusedTextColor = OnBackground,
-                    unfocusedTextColor = OnBackground
-                ),
+                colors = textFieldColors(),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true
             )
@@ -350,15 +341,7 @@ fun DarAdopcionScreen(
                 label = { Text("📅 Edad (en meses)") },
                 placeholder = { Text("Ej: 6") },
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Primary,
-                    unfocusedBorderColor = Border,
-                    focusedLabelColor = Primary,
-                    unfocusedLabelColor = TextSecondary,
-                    cursorColor = Primary,
-                    focusedTextColor = OnBackground,
-                    unfocusedTextColor = OnBackground
-                ),
+                colors = textFieldColors(),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true
             )
@@ -406,7 +389,7 @@ fun DarAdopcionScreen(
                     showSuggestions = newValue.length >= 3
                     if (newValue.length >= 3) {
                         scope.launch {
-                            addressSuggestions = getAddressSuggestions(newValue)
+                            addressSuggestions = withContext(Dispatchers.IO) { getAddressSuggestions(newValue) }
                         }
                     } else {
                         addressSuggestions = emptyList()
@@ -415,15 +398,7 @@ fun DarAdopcionScreen(
                 label = { Text("📍 Direccion donde esta el animal") },
                 placeholder = { Text("Ej: Rivera 3142, Montevideo") },
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Primary,
-                    unfocusedBorderColor = Border,
-                    focusedLabelColor = Primary,
-                    unfocusedLabelColor = TextSecondary,
-                    cursorColor = Primary,
-                    focusedTextColor = OnBackground,
-                    unfocusedTextColor = OnBackground
-                ),
+                colors = textFieldColors(),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
                 trailingIcon = {
@@ -491,15 +466,7 @@ fun DarAdopcionScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Primary,
-                    unfocusedBorderColor = Border,
-                    focusedLabelColor = Primary,
-                    unfocusedLabelColor = TextSecondary,
-                    cursorColor = Primary,
-                    focusedTextColor = OnBackground,
-                    unfocusedTextColor = OnBackground
-                ),
+                colors = textFieldColors(),
                 shape = RoundedCornerShape(12.dp),
                 maxLines = 4
             )
@@ -588,6 +555,7 @@ fun DarAdopcionScreen(
                     
                     if (nombre.isNotBlank() && edad > 0 && direccion.isNotBlank()) {
                         lastSubmittedTipo = tipo
+                        triggerSound = true
                         onSubmit(nombre, tipo, edad, vacunas, direccion, descripcion, selectedImageBase64)
                     }
                 },
@@ -633,28 +601,6 @@ fun DarAdopcionScreen(
                 modifier = Modifier.fillMaxWidth()
             )
         }
-    }
-}
-
-private fun convertUriToBase64(context: android.content.Context, uri: Uri): String? {
-    return try {
-        val inputStream = context.contentResolver.openInputStream(uri)
-        val bitmap = BitmapFactory.decodeStream(inputStream)
-        bitmapToBase64(bitmap)
-    } catch (e: Exception) {
-        null
-    }
-}
-
-private fun bitmapToBase64(bitmap: Bitmap): String? {
-    return try {
-        val resized = Bitmap.createScaledBitmap(bitmap, 300, 300, true)
-        val outputStream = ByteArrayOutputStream()
-        resized.compress(Bitmap.CompressFormat.JPEG, 70, outputStream)
-        val bytes = outputStream.toByteArray()
-        "data:image/jpeg;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP)
-    } catch (e: Exception) {
-        null
     }
 }
 

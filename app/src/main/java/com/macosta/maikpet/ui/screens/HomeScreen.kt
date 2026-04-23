@@ -1,6 +1,5 @@
 package com.macosta.maikpet.ui.screens
 
-import android.content.Context
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*

@@ -1,6 +1,5 @@
 package com.macosta.maikpet.ui.components
 
-import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -30,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import com.macosta.maikpet.data.model.Mascota
 import com.macosta.maikpet.data.model.Usuario
 import com.macosta.maikpet.ui.theme.*
+import com.macosta.maikpet.util.ImageUtils
 import com.macosta.maikpet.viewmodel.Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -337,21 +337,11 @@ private fun MascotaCardImage(
     modifier: Modifier = Modifier
 ) {
     var bitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
-    
+
     LaunchedEffect(imagen) {
-        bitmap = try {
-            if (imagen.startsWith("data:image")) {
-                val base64Data = imagen.substringAfter("base64,")
-                val imageBytes = android.util.Base64.decode(base64Data, android.util.Base64.DEFAULT)
-                BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-            } else {
-                null
-            }
-        } catch (e: Exception) {
-            null
-        }
+        bitmap = ImageUtils.decodeBase64ToBitmap(imagen)
     }
-    
+
     Box(
         modifier = modifier
             .clip(CircleShape)
@@ -368,48 +358,6 @@ private fun MascotaCardImage(
         } ?: Text(
             text = if (tipo == "Perro") "🐶" else "🐱",
             fontSize = 24.sp
-        )
-    }
-}
-
-@Composable
-fun MascotaImagenUrl(
-    imagen: String,
-    tipo: String,  // Parámetro no usado pero mantenido por compatibilidad
-    modifier: Modifier = Modifier
-) {
-    var bitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
-    
-    LaunchedEffect(imagen) {
-        if (imagen.startsWith("data:image")) {
-            try {
-                val base64Data = imagen.substringAfter("base64,")
-                val imageBytes = android.util.Base64.decode(base64Data, android.util.Base64.DEFAULT)
-                bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-            } catch (e: Exception) {
-                bitmap = null
-            }
-        }
-    }
-    
-    Box(
-        modifier = modifier
-            .clip(CircleShape)
-            .background(SurfaceVariant),
-        contentAlignment = Alignment.Center
-    ) {
-        bitmap?.let {
-            Image(
-                bitmap = it.asImageBitmap(),
-                contentDescription = "Foto",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-        } ?: coil.compose.AsyncImage(
-            model = if (imagen.startsWith("http")) imagen else "https://lmcosturas.com/pet/$imagen",
-            contentDescription = "Foto",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
         )
     }
 }

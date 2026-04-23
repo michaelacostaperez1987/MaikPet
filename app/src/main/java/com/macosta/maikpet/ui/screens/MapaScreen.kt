@@ -4,10 +4,8 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.util.Base64
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -35,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.macosta.maikpet.data.model.Mascota
 import com.macosta.maikpet.ui.theme.*
+import com.macosta.maikpet.util.ImageUtils
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptor
@@ -47,7 +46,6 @@ import com.google.maps.android.compose.*
 @Composable
 fun MapaScreen(
     mascotas: List<Mascota>,
-    onLocationUpdate: () -> Unit,
     onRefresh: () -> Unit,
     isLoading: Boolean = false,
     modifier: Modifier = Modifier
@@ -408,15 +406,7 @@ private fun MapaMascotaImagen(
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
     
     LaunchedEffect(imagen) {
-        if (imagen != null && imagen.startsWith("data:image")) {
-            try {
-                val base64Data = imagen.substringAfter("base64,")
-                val imageBytes = Base64.decode(base64Data, Base64.DEFAULT)
-                bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-            } catch (e: Exception) {
-                bitmap = null
-            }
-        }
+        bitmap = imagen?.let { ImageUtils.decodeBase64ToBitmap(it) }
     }
     
     Box(

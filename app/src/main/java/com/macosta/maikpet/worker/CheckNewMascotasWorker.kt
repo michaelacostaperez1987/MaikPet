@@ -1,11 +1,9 @@
 package com.macosta.maikpet.worker
 
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.*
@@ -13,6 +11,7 @@ import com.macosta.maikpet.MainActivity
 import com.macosta.maikpet.R
 import com.macosta.maikpet.data.api.MaikPetApi
 import com.macosta.maikpet.data.model.Mascota
+import com.macosta.maikpet.util.NotificationUtils
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
@@ -62,19 +61,14 @@ class CheckNewMascotasWorker @AssistedInject constructor(
     }
 
     private fun showNewMascotaNotification(mascota: Mascota?, newCount: Int) {
-        val channelId = "maikpet_new_mascotas"
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "Nuevas mascotas",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Notificaciones de nuevas mascotas en adopción"
-            }
-            notificationManager.createNotificationChannel(channel)
-        }
+        NotificationUtils.createChannel(
+            notificationManager = notificationManager,
+            channelId = NotificationUtils.CHANNEL_NEW_MASCOTAS,
+            channelName = "Nuevas mascotas",
+            description = "Notificaciones de nuevas mascotas en adopción"
+        )
 
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -89,7 +83,7 @@ class CheckNewMascotasWorker @AssistedInject constructor(
         val title = if (newCount == 1) "🐾 Nueva mascota disponible!" else "🐾 $newCount nuevas mascotas!"
         val subtitle = if (mascota != null) "${mascota.tipo} - ${mascota.nombre}" else "Ver en el mapa"
 
-        val notification = NotificationCompat.Builder(context, channelId)
+        val notification = NotificationCompat.Builder(context, NotificationUtils.CHANNEL_NEW_MASCOTAS)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
             .setContentText(subtitle)
