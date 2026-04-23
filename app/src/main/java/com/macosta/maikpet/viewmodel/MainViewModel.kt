@@ -31,7 +31,7 @@ data class MainUiState(
 )
 
 enum class Screen {
-    Home, Mapa, Adopcion, MisMascotas, DarAdopcion, AcercaDe, Terminos, EditarMascota, EditarPerfil, Login, Legal
+    Home, Mapa, Adopcion, MisMascotas, DarAdopcion, AcercaDe, Terminos, EditarMascota, EditarPerfil, Legal
 }
 
 @HiltViewModel
@@ -89,21 +89,19 @@ class MainViewModel @Inject constructor(
                         if (fcmToken != null) repository.sendDeviceToken(fcmToken)
                         loadMisMascotas()
                     } else {
-                        // No hay usuario, redirigir a login
+                        // No hay usuario, solo actualizar estado - MainActivity manejará la navegación
                         _uiState.update { it.copy(
                             currentUser = null, 
-                            isLoggedIn = false,
-                            currentScreen = Screen.Login
+                            isLoggedIn = false
                         ) }
                     }
                     loadMascotas()
                 }
                 is com.macosta.maikpet.data.repository.Result.Error -> {
-                    // Error, redirigir a login
+                    // Error, solo actualizar estado - MainActivity manejará la navegación
                     _uiState.update { it.copy(
                         currentUser = null, 
-                        isLoggedIn = false,
-                        currentScreen = Screen.Login
+                        isLoggedIn = false
                     ) }
                     loadMascotas()
                 }
@@ -130,8 +128,9 @@ class MainViewModel @Inject constructor(
                           screen == Screen.EditarMascota || screen == Screen.EditarPerfil
         
         if (requiresAuth && !_uiState.value.isLoggedIn) {
-            // Redirigir a login si no está autenticado
-            _uiState.update { it.copy(currentScreen = Screen.Login) }
+            // No navegar - MainActivity manejará la redirección a LoginActivity
+            // cuando detecte isLoggedIn = false
+            return
         } else {
             _uiState.update { it.copy(currentScreen = screen, selectedMascota = null) }
             when (screen) {
@@ -229,7 +228,7 @@ class MainViewModel @Inject constructor(
             
             when (val result = repository.login(email, password)) {
                 is Result.Success -> {
-                    _uiState.update { it.copy(isLoading = false, currentUser = result.data) }
+                    _uiState.update { it.copy(isLoading = false, currentUser = result.data, currentScreen = Screen.Mapa) }
                 }
                 is Result.Error -> {
                     _uiState.update { it.copy(isLoading = false, error = result.message) }
@@ -267,8 +266,8 @@ class MainViewModel @Inject constructor(
             repository.logout()
             _uiState.update { it.copy(
                 currentUser = null, 
-                isLoggedIn = false,
-                currentScreen = Screen.Login  // Redirigir a pantalla de login
+                isLoggedIn = false
+                // MainActivity manejará la navegación a LoginActivity
             ) }
         }
     }

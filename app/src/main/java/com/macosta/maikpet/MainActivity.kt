@@ -68,8 +68,12 @@ class MainActivity : ComponentActivity() {
                 // Verificar autenticación - si no hay usuario logueado, ir a login
                 LaunchedEffect(uiState.isLoggedIn, uiState.currentUser) {
                     if (!uiState.isLoggedIn && uiState.currentUser == null) {
-                        startActivity(Intent(this@MainActivity, LoginActivity::class.java))
-                        finish()
+                        // Solo navegar a LoginActivity si no estamos ya en LoginActivity
+                        // y si no acabamos de venir de LoginActivity
+                        if (this@MainActivity !is LoginActivity) {
+                            startActivity(Intent(this@MainActivity, LoginActivity::class.java))
+                            finish()
+                        }
                     }
                 }
                 
@@ -188,13 +192,9 @@ fun MaikPetApp(viewModel: MainViewModel) {
                             onEditMascota = { mascota -> viewModel.editMascota(mascota) }
                         )
                     } else {
-                        // Redirigir a login si no está autenticado
-                        LaunchedEffect(Unit) {
-                            viewModel.navigateTo(Screen.Login)
-                        }
-                        // Mostrar pantalla de carga o mensaje
+                        // Mostrar mensaje de que necesita iniciar sesión
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Redirigiendo a login...")
+                            Text("Debes iniciar sesión para ver tus mascotas")
                         }
                     }
                 }
@@ -211,13 +211,9 @@ fun MaikPetApp(viewModel: MainViewModel) {
                             }
                         )
                     } else {
-                        // Redirigir a login si no está autenticado
-                        LaunchedEffect(Unit) {
-                            viewModel.navigateTo(Screen.Login)
-                        }
-                        // Mostrar pantalla de carga o mensaje
+                        // Mostrar mensaje de que necesita iniciar sesión
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Redirigiendo a login...")
+                            Text("Debes iniciar sesión para dar en adopción")
                         }
                     }
                 }
@@ -245,19 +241,10 @@ fun MaikPetApp(viewModel: MainViewModel) {
                     },
                     onBack = { viewModel.navigateTo(Screen.Mapa) }
                 )
-                Screen.Login -> LoginScreen(
-                    isLoading = uiState.isLoading,
-                    error = uiState.error,
-                    onLogin = { email, password -> viewModel.login(email, password) },
-                    onRegister = { nombre, dir, tel, email, pass, edad ->
-                        viewModel.register(nombre, dir, tel, email, pass, edad)
-                    },
-                    onViewPrivacy = { viewModel.navigateTo(Screen.Legal) },
-                    onViewTerms = { viewModel.navigateTo(Screen.Legal) },
-                    onClearError = { viewModel.clearError() }
-                )
+                // LoginScreen no se muestra aquí - se maneja con LoginActivity separada
+                // Screen.Login -> LoginScreen(...) - ELIMINADO
                 Screen.Legal -> LegalScreen(
-                    onBack = { viewModel.navigateTo(Screen.Login) }
+                    onBack = { viewModel.navigateTo(Screen.Mapa) }
                 )
             }
         }
