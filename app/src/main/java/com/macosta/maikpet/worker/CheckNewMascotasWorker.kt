@@ -30,7 +30,8 @@ class CheckNewMascotasWorker @AssistedInject constructor(
             
             val response = api.getMascotas()
             if (response.isSuccessful) {
-                val mascotas = response.body() ?: emptyList()
+                val body = response.body()
+                val mascotas = if (body?.success == true) body.mascotas ?: emptyList() else emptyList()
                 
                 val newestMascota = mascotas.maxByOrNull { it.id }
                 val newCount = newestMascota?.let { it.id - lastId } ?: 0

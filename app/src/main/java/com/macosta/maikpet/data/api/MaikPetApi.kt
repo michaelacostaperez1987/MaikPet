@@ -15,10 +15,10 @@ import retrofit2.http.Path
 interface MaikPetApi {
     
     @GET("get_mascotas.php")
-    suspend fun getMascotas(): Response<List<Mascota>>
+    suspend fun getMascotas(): Response<ApiResponse<List<Mascota>>>
     
     @GET("get_mis_mascotas.php")
-    suspend fun getMisMascotas(): Response<List<Mascota>>
+    suspend fun getMisMascotas(): Response<ApiResponse<List<Mascota>>>
     
     @POST("add_mascota.php")
     suspend fun addMascota(@Body mascota: MascotaRequest): Response<ApiResponse<Mascota>>

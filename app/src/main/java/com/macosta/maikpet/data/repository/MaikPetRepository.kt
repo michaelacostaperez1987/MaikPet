@@ -199,10 +199,15 @@ class MaikPetRepository @Inject constructor(
             _isLoading.value = true
             val response = api.getMascotas()
             if (response.isSuccessful) {
-                val mascotas = response.body() ?: emptyList()
-                _mascotas.value = mascotas
-                cacheMascotas(mascotas)
-                Result.Success(mascotas)
+                val body = response.body()
+                if (body?.success == true) {
+                    val mascotas = body.mascotas ?: emptyList()
+                    _mascotas.value = mascotas
+                    cacheMascotas(mascotas)
+                    Result.Success(mascotas)
+                } else {
+                    Result.Error(body?.error ?: "Error al cargar mascotas")
+                }
             } else {
                 val errorMsg = when (response.code()) {
                     500 -> "Error del servidor. Intenta más tarde"
@@ -252,11 +257,16 @@ class MaikPetRepository @Inject constructor(
             _isLoading.value = true
             val response = api.getMisMascotas()
             if (response.isSuccessful) {
-                val mascotas = response.body() ?: emptyList()
-                _misMascotas.value = mascotas
-                Result.Success(mascotas)
+                val body = response.body()
+                if (body?.success == true) {
+                    val mascotas = body.mascotas ?: emptyList()
+                    _misMascotas.value = mascotas
+                    Result.Success(mascotas)
+                } else {
+                    Result.Error(body?.error ?: "Error al cargar tus mascotas")
+                }
             } else {
-                Result.Error("Error al cargar tus mascotas")
+                Result.Error("Error del servidor (${response.code()})")
             }
         } catch (e: Exception) {
             Result.Error(e.message ?: "Error de conexión")
