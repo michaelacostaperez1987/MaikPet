@@ -22,7 +22,10 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -376,24 +379,51 @@ fun MaikPetApp(viewModel: MainViewModel) {
                 
                 HorizontalDivider(color = Border)
                 
+                var showExitDialog by remember { mutableStateOf(false) }
+                
                 DrawerItem(
                     icon = Icons.Default.ExitToApp,
                     text = "Salir",
                     selected = false,
                     onClick = {
                         drawerOpen = false
-                        // 1. Cerrar sesión primero
-                        viewModel.logout()
-                        // 2. Dar tiempo para que se procese el logout (opcional)
-                        LaunchedEffect(Unit) {
-                            delay(300) // Pequeño delay para asegurar que se procese el logout
-                            // 3. Cerrar completamente la aplicación
-                            (context as? ComponentActivity)?.finishAffinity()
-                            // Opcional: También forzar cierre del proceso
-                            // android.os.Process.killProcess(android.os.Process.myPid())
-                        }
+                        showExitDialog = true
                     }
                 )
+                
+                if (showExitDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showExitDialog = false },
+                        title = { Text("Salir de la aplicación") },
+                        text = { Text("¿Estás seguro que querés salir? Se cerrará la sesión y la aplicación.") },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    showExitDialog = false
+                                    // 1. Cerrar sesión primero
+                                    viewModel.logout()
+                                    // 2. Cerrar completamente la aplicación después de un breve delay
+                                    CoroutineScope(Dispatchers.Main).launch {
+                                        delay(300) // Pequeño delay para asegurar que se procese el logout
+                                        // 3. Cerrar completamente la aplicación
+                                        (context as? ComponentActivity)?.finishAffinity()
+                                        // Opcional: También forzar cierre del proceso
+                                        // android.os.Process.killProcess(android.os.Process.myPid())
+                                    }
+                                }
+                            ) {
+                                Text("Salir")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(
+                                onClick = { showExitDialog = false }
+                            ) {
+                                Text("Cancelar")
+                            }
+                        }
+                    )
+                }
             }
         }
     }
