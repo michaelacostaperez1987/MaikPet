@@ -33,3 +33,6 @@ val Overlay = Color(0x26000000)                 // Dark overlay
 val TabBarBackground = Color(0xF9F9F9)          // Tab bar
 val NavigationBar = Color(0xF8F8F8)             // Bottom nav
 val CardBorder = Color(0x1A000000)              // Subtle card border
+
+// Gradient for intro screen
+val PrimaryGradient = Color(0xFF007AFF)         // Solid primary color for now

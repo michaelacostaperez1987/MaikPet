@@ -261,6 +261,7 @@ fun MaikPetApp(viewModel: MainViewModel) {
                     .background(Surface)
                     .clickable(enabled = false) { }
                     .padding(vertical = 24.dp)
+                    .navigationBarsPadding()
             ) {
                 // Perfil del usuario
                 Row(
@@ -289,7 +290,7 @@ fun MaikPetApp(viewModel: MainViewModel) {
                                 fontWeight = FontWeight.Medium
                             )
                             Text(
-                                text = usuario.email ?: "",
+                                text = usuario.email,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = TextSecondary
                             )
@@ -389,52 +390,6 @@ fun MaikPetApp(viewModel: MainViewModel) {
                 )
                 
                 HorizontalDivider(color = Border)
-                
-                var showExitDialog by remember { mutableStateOf(false) }
-                
-                DrawerItem(
-                    icon = Icons.Default.ExitToApp,
-                    text = "Salir",
-                    selected = false,
-                    onClick = {
-                        drawerOpen = false
-                        showExitDialog = true
-                    }
-                )
-                
-                if (showExitDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showExitDialog = false },
-                        title = { Text("Salir de la aplicación") },
-                        text = { Text("¿Estás seguro que querés salir? Se cerrará la sesión y la aplicación.") },
-                        confirmButton = {
-                            Button(
-                                onClick = {
-                                    showExitDialog = false
-                                    // 1. Cerrar sesión primero
-                                    viewModel.logout()
-                                    // 2. Cerrar completamente la aplicación
-                                    val activity = context as? ComponentActivity
-                                    activity?.runOnUiThread {
-                                        // Método más efectivo para cerrar la app
-                                        activity.finishAffinity()
-                                        // Forzar cierre del proceso para asegurar
-                                        android.os.Process.killProcess(android.os.Process.myPid())
-                                    }
-                                }
-                            ) {
-                                Text("Salir")
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(
-                                onClick = { showExitDialog = false }
-                            ) {
-                                Text("Cancelar")
-                            }
-                        }
-                    )
-                }
             }
         }
     }

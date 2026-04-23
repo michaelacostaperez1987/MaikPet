@@ -127,14 +127,8 @@ fun MaikPetDrawer(
                         )
                     }
                 } else {
-                    item {
-                        DrawerItem(
-                            icon = Icons.Default.Person,
-                            title = "Login / Registro",
-                            isActive = currentScreen == Screen.Login,
-                            onClick = { onNavigate(Screen.Login) }
-                        )
-                    }
+                    // Login/Registro ahora se maneja con LoginActivity separada
+                    // No mostramos item de login en el drawer
                 }
                 item {
                     DrawerItem(
@@ -291,7 +285,7 @@ fun MascotaCard(
                 }
                 if (!showDelete && mascota.dueno != null) {
                     Text(
-                        text = "📞 Contacto: ${mascota.dueno.telefono ?: mascota.dueno.email}",
+                        text = "📞 Contacto: ${mascota.dueno.telefono}",
                         style = MaterialTheme.typography.bodySmall,
                         color = Primary
                     )
@@ -381,7 +375,7 @@ private fun MascotaCardImage(
 @Composable
 fun MascotaImagenUrl(
     imagen: String,
-    tipo: String,
+    tipo: String,  // Parámetro no usado pero mantenido por compatibilidad
     modifier: Modifier = Modifier
 ) {
     var bitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
